@@ -16,7 +16,6 @@
 """
 
 import os
-import sys
 import numpy as np
 import pandas as pd
 from astropy.io import fits
@@ -58,6 +57,7 @@ class RfiFeatures():
 
     def __init__(self, fits_path):
         """
+        提取FAST数据的RFI, 并显示局部图像信息。
 
         :param fits_path: FAST文件路径(目前仅支持fits文件格式)
         """
@@ -233,8 +233,8 @@ class RfiFeatures():
         """
 
         rfi_features = []
-        # for num_block in tqdm(range(self.fits_args.NAXIS2)):
-        for num_block in tqdm(range(1)):
+        for num_block in tqdm(range(self.fits_args.NAXIS2)):
+        # for num_block in tqdm(range(3)):
             data, mask, line_mask, blob_mask = self.get_mask(num_block)
 
             line_feature = self.get_line_feature(data, line_mask)
@@ -249,13 +249,50 @@ class RfiFeatures():
 
         return rfi_features
 
-    def rfi_show(self, rfi_feature, edge_size=2, save_fig=None):
+    def rfi_show(self, block_num, show_mask=True, save_fig=None):
+        """
+        显示整个数据块图像
+
+        :param block_num: 显示fits文件的数据块的编号
+        :param show_mask: 是否显示mask
+        :param save_fig: 保存路径(save_fig+rfi_image.png)，None不保存立即显示
+        :return: None
+        """
+        if self.block_num == block_num:
+            data = self.data
+            mask = self.mask
+        else:
+            data, mask, _, _ = self.get_mask(block_num)
+
+        plt.figure(figsize=(10, 8), dpi=128)
+        if show_mask:
+            plt.imshow(np.ma.array(data, mask=mask), aspect='auto', cmap='jet')
+        else:
+            plt.imshow(data, aspect='auto', cmap='jet')
+
+        plt.yticks(np.arange(0, data.shape[0], data.shape[0] // 5),
+                   np.round(self.fits_args.DAT_FREQ[::data.shape[0] // 5][::-1], decimals=2))
+
+        plt.title('RFI Data\n%s,block=%d' %
+                  (self.fits_path.split('/')[-1], block_num), size=15)
+        plt.xlabel('Time (s)', size=15)
+        plt.ylabel('Frequency (MHz)', size=15)
+        plt.xticks(size=15)
+        plt.tight_layout()
+
+        if save_fig != None:
+            plt.savefig(save_fig+'rfi_image.png')
+        else:
+            plt.show()
+
+
+    def part_rfi_show(self, rfi_feature, edge_size=2, save_fig=None):
         """
         显示单个RFI特征的局部图像
 
         :param rfi_feature: 需要显示的rfi特征
         :param edge_size: 局部显示边框
-        :param save_fig: 保存路径(save_fig+rfi_features_data.png)，None不保存立即显示
+        :param save_fig: 保存路径(save_fig+rfi_feature_image.png)，None不保存立即显示
         :return: None
         """
         # 显示局部上限扩展尺寸
@@ -337,8 +374,9 @@ class RfiFeatures():
         plt.title('Partial Data: %s\nblock=%d,freq=%.2f,bandwidth=%.2f,d_mean=%.2f,d_var=%.2f' %
                   (fitsname.split('/')[-1], num_block, y, bandwidth, data_mean, data_var), size=15)
         plt.tight_layout()
+
         if save_fig != None:
-            plt.savefig(save_fig+'rfi_features_data.png')
+            plt.savefig(save_fig+'rfi_feature_image.png')
         else:
             plt.show()
 
@@ -365,8 +403,60 @@ class RfiFeatures():
         return mask_groups
 
 
-def get_rfi_features(fits_dir, save_df=None):
+def get_rfi_features(fits_dir):
+    """
+    获取整个路径下所有fits文件的RFI特征
 
-    rfi_feature = []
+    :param fits_dir: FAST数据路径
+    :return: 返回一个DataFrame, 包含特征：
+        fits_name: fits文件名(None)
+        num_block: 数据块编号(None)
+        noise_type: 噪声类型：
+            0 单点状噪声
+            1 单列噪声
+            2 单行噪声
+            3 单整行噪声
+            4 带状噪声
+            5 其他噪声
+        x_index：噪声起始位置x索引
+        y_index：噪声起始位置y索引
+        bandwidth_unit：噪声宽带，以矩阵采集为单位
+        duration_unit：持续时间，以矩阵采集为单位
+        x：噪声起始位置,时间点
+        y：噪声起始位置，频率
+        bandwidth：噪声带宽
+        duration：持续时间
+        data_mean：噪声强度均值
+        data_var：噪声强度方差
+    """
 
-    return rfi_feature
+    fits_list = os.listdir(fits_dir)
+
+    cols_name = ["fits_name", "num_block", "noise_type", "x_index", "y_index", "bandwidth_unit", "duration_unit",
+                 "x", "y", "bandwidth", "duration", "data_mean", "data_var"]
+
+    rfi_feature_df = pd.DataFrame(data=None, columns=cols_name)
+
+    for fits_name in tqdm(fits_list):
+        rfi_f = RfiFeatures(fits_dir + fits_name)
+        rfi_features = np.array(rfi_f.get_rfi_features())
+        rfi_feature_df = rfi_feature_df.append(pd.DataFrame(data=rfi_features, columns= cols_name),
+                                               ignore_index=True)
+
+    # 修改数据类型
+    rfi_feature_df.num_block = rfi_feature_df.num_block.astype(np.int16)
+    rfi_feature_df.noise_type = rfi_feature_df.noise_type.astype(np.int16)
+    rfi_feature_df.x_index = rfi_feature_df.x_index.astype(np.int16)
+    rfi_feature_df.y_index = rfi_feature_df.y_index.astype(np.int16)
+    rfi_feature_df.bandwidth_unit = rfi_feature_df.bandwidth_unit.astype(np.int16)
+    rfi_feature_df.duration_unit = rfi_feature_df.duration_unit.astype(np.int16)
+    rfi_feature_df.x = rfi_feature_df.x.astype(np.float32)
+    rfi_feature_df.y = rfi_feature_df.y.astype(np.float32)
+    rfi_feature_df.bandwidth = rfi_feature_df.bandwidth.astype(np.float32)
+    rfi_feature_df.duration = rfi_feature_df.duration.astype(np.float32)
+    rfi_feature_df.data_mean = rfi_feature_df.data_mean.astype(np.float32)
+    rfi_feature_df.data_var = rfi_feature_df.data_var.astype(np.float32)
+
+    rfi_feature_df.to_csv("./rfi_feature_data.csv", index=False)
+
+    return rfi_feature_df

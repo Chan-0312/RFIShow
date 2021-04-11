@@ -11,7 +11,7 @@
    </rect>
   </property>
   <property name="windowTitle">
-   <string>MainWindow</string>
+   <string>RFIShow_v0.1---by 熊盛春</string>
   </property>
   <widget class="QWidget" name="centralwidget">
    <widget class="QStackedWidget" name="stackedWidget">
@@ -23,40 +23,14 @@
       <height>1024</height>
      </rect>
     </property>
-    <widget class="QWidget" name="main_page">
-     <widget class="QPushButton" name="pushButton">
+    <widget class="QWidget" name="page_1">
+     <widget class="QLabel" name="lb_title_p1">
       <property name="geometry">
        <rect>
-        <x>600</x>
-        <y>230</y>
-        <width>271</width>
-        <height>101</height>
-       </rect>
-      </property>
-      <property name="text">
-       <string>FIST文件可视化</string>
-      </property>
-     </widget>
-     <widget class="QPushButton" name="pushButton_2">
-      <property name="geometry">
-       <rect>
-        <x>590</x>
-        <y>430</y>
-        <width>271</width>
-        <height>101</height>
-       </rect>
-      </property>
-      <property name="text">
-       <string>启动</string>
-      </property>
-     </widget>
-     <widget class="QLabel" name="label">
-      <property name="geometry">
-       <rect>
-        <x>210</x>
-        <y>60</y>
-        <width>701</width>
-        <height>81</height>
+        <x>0</x>
+        <y>0</y>
+        <width>1280</width>
+        <height>100</height>
        </rect>
       </property>
       <property name="font">
@@ -65,19 +39,82 @@
         <pointsize>48</pointsize>
        </font>
       </property>
+      <property name="layoutDirection">
+       <enum>Qt::LeftToRight</enum>
+      </property>
       <property name="text">
-       <string>主界面</string>
+       <string>RFIShow可视化软件</string>
+      </property>
+      <property name="alignment">
+       <set>Qt::AlignCenter</set>
+      </property>
+     </widget>
+     <widget class="QPushButton" name="pb_top2_p1">
+      <property name="geometry">
+       <rect>
+        <x>400</x>
+        <y>220</y>
+        <width>500</width>
+        <height>100</height>
+       </rect>
+      </property>
+      <property name="font">
+       <font>
+        <family>Arial</family>
+        <pointsize>16</pointsize>
+       </font>
+      </property>
+      <property name="text">
+       <string>RFI可视化</string>
+      </property>
+     </widget>
+     <widget class="QPushButton" name="pb_top3_p1">
+      <property name="geometry">
+       <rect>
+        <x>400</x>
+        <y>360</y>
+        <width>500</width>
+        <height>100</height>
+       </rect>
+      </property>
+      <property name="font">
+       <font>
+        <family>Arial</family>
+        <pointsize>16</pointsize>
+       </font>
+      </property>
+      <property name="text">
+       <string>RFI局部分析</string>
+      </property>
+     </widget>
+     <widget class="QPushButton" name="pb_top4_p1">
+      <property name="geometry">
+       <rect>
+        <x>400</x>
+        <y>500</y>
+        <width>500</width>
+        <height>100</height>
+       </rect>
+      </property>
+      <property name="font">
+       <font>
+        <family>Arial</family>
+        <pointsize>16</pointsize>
+       </font>
+      </property>
+      <property name="text">
+       <string>RFI聚类分析</string>
       </property>
      </widget>
     </widget>
     <widget class="QWidget" name="page_2">
-     <widget class="QLabel" name="label_2">
+     <widget class="QLabel" name="lb_title_p2">
       <property name="geometry">
        <rect>
-        <x>230</x>
-        <y>60</y>
-        <width>911</width>
-        <height>81</height>
+        <x>0</x>
+        <y>0</y>
+        <width>1280</width>
+        <height>100</height>
        </rect>
       </property>
       <property name="font">
@@ -86,19 +123,44 @@
         <pointsize>48</pointsize>
        </font>
       </property>
+      <property name="layoutDirection">
+       <enum>Qt::LeftToRight</enum>
+      </property>
       <property name="text">
-       <string>Fist文件可视化界面</string>
+       <string>FAST文件分析</string>
+      </property>
+      <property name="alignment">
+       <set>Qt::AlignCenter</set>
+      </property>
+     </widget>
+     <widget class="QPushButton" name="pb_return_p2">
+      <property name="geometry">
+       <rect>
+        <x>0</x>
+        <y>0</y>
+        <width>100</width>
+        <height>100</height>
+       </rect>
+      </property>
+      <property name="font">
+       <font>
+        <family>Arial</family>
+        <pointsize>16</pointsize>
+       </font>
+      </property>
+      <property name="text">
+       <string>返回</string>
       </property>
      </widget>
     </widget>
     <widget class="QWidget" name="page_3">
-     <widget class="QLabel" name="label_3">
+     <widget class="QLabel" name="lb_title_p3">
       <property name="geometry">
        <rect>
-        <x>190</x>
-        <y>60</y>
-        <width>911</width>
-        <height>81</height>
+        <x>0</x>
+        <y>0</y>
+        <width>1280</width>
+        <height>100</height>
        </rect>
       </property>
       <property name="font">
@@ -106,20 +168,45 @@
         <family>Arial</family>
         <pointsize>48</pointsize>
        </font>
+      </property>
+      <property name="layoutDirection">
+       <enum>Qt::LeftToRight</enum>
       </property>
       <property name="text">
        <string>RFI局部特征显示界面</string>
       </property>
+      <property name="alignment">
+       <set>Qt::AlignCenter</set>
+      </property>
+     </widget>
+     <widget class="QPushButton" name="pb_return_p3">
+      <property name="geometry">
+       <rect>
+        <x>0</x>
+        <y>0</y>
+        <width>100</width>
+        <height>100</height>
+       </rect>
+      </property>
+      <property name="font">
+       <font>
+        <family>Arial</family>
+        <pointsize>16</pointsize>
+       </font>
+      </property>
+      <property name="text">
+       <string>返回</string>
+      </property>
      </widget>
     </widget>
     <widget class="QWidget" name="page_4">
-     <widget class="QLabel" name="label_4">
+     <widget class="QLabel" name="lb_title_p4">
       <property name="geometry">
        <rect>
-        <x>150</x>
-        <y>110</y>
-        <width>911</width>
-        <height>81</height>
+        <x>0</x>
+        <y>0</y>
+        <width>1280</width>
+        <height>100</height>
        </rect>
       </property>
       <property name="font">
@@ -128,8 +215,162 @@
         <pointsize>48</pointsize>
        </font>
       </property>
+      <property name="layoutDirection">
+       <enum>Qt::LeftToRight</enum>
+      </property>
       <property name="text">
        <string>RFI聚类可视化界面</string>
+      </property>
+      <property name="alignment">
+       <set>Qt::AlignCenter</set>
+      </property>
+     </widget>
+     <widget class="QPushButton" name="pb_return_p4">
+      <property name="geometry">
+       <rect>
+        <x>0</x>
+        <y>0</y>
+        <width>100</width>
+        <height>100</height>
+       </rect>
+      </property>
+      <property name="font">
+       <font>
+        <family>Arial</family>
+        <pointsize>16</pointsize>
+       </font>
+      </property>
+      <property name="text">
+       <string>返回</string>
+      </property>
+     </widget>
+     <widget class="QLabel" name="image_1_p4">
+      <property name="geometry">
+       <rect>
+        <x>0</x>
+        <y>120</y>
+        <width>850</width>
+        <height>680</height>
+       </rect>
+      </property>
+      <property name="styleSheet">
+       <string notr="true">background-color: rgb(0, 255, 127);</string>
+      </property>
+      <property name="text">
+       <string>image_1</string>
+      </property>
+      <property name="alignment">
+       <set>Qt::AlignCenter</set>
+      </property>
+     </widget>
+     <widget class="QLabel" name="image_2_p4">
+      <property name="geometry">
+       <rect>
+        <x>870</x>
+        <y>120</y>
+        <width>400</width>
+        <height>320</height>
+       </rect>
+      </property>
+      <property name="styleSheet">
+       <string notr="true">background-color: rgb(0, 255, 127);</string>
+      </property>
+      <property name="text">
+       <string>image_2</string>
+      </property>
+      <property name="alignment">
+       <set>Qt::AlignCenter</set>
+      </property>
+     </widget>
+     <widget class="QLabel" name="image_3_p4">
+      <property name="geometry">
+       <rect>
+        <x>870</x>
+        <y>480</y>
+        <width>400</width>
+        <height>320</height>
+       </rect>
+      </property>
+      <property name="styleSheet">
+       <string notr="true">background-color: rgb(0, 255, 127);</string>
+      </property>
+      <property name="text">
+       <string>image_3</string>
+      </property>
+      <property name="alignment">
+       <set>Qt::AlignCenter</set>
+      </property>
+     </widget>
+     <widget class="QComboBox" name="comboBox">
+      <property name="geometry">
+       <rect>
+        <x>400</x>
+        <y>840</y>
+        <width>191</width>
+        <height>41</height>
+       </rect>
+      </property>
+      <item>
+       <property name="text">
+        <string>层次聚类</string>
+       </property>
+      </item>
+      <item>
+       <property name="text">
+        <string>K-Means</string>
+       </property>
+      </item>
+     </widget>
+     <widget class="QPushButton" name="pushButton_3">
+      <property name="geometry">
+       <rect>
+        <x>400</x>
+        <y>900</y>
+        <width>191</width>
+        <height>41</height>
+       </rect>
+      </property>
+      <property name="text">
+       <string>参数设置</string>
+      </property>
+     </widget>
+     <widget class="QPushButton" name="pushButton_4">
+      <property name="geometry">
+       <rect>
+        <x>400</x>
+        <y>960</y>
+        <width>191</width>
+        <height>41</height>
+       </rect>
+      </property>
+      <property name="text">
+       <string>开始聚类</string>
+      </property>
+     </widget>
+     <widget class="QPushButton" name="pushButton_5">
+      <property name="geometry">
+       <rect>
+        <x>40</x>
+        <y>910</y>
+        <width>191</width>
+        <height>71</height>
+       </rect>
+      </property>
+      <property name="text">
+       <string>TSNE降维</string>
+      </property>
+     </widget>
+     <widget class="QPushButton" name="pushButton_6">
+      <property name="geometry">
+       <rect>
+        <x>40</x>
+        <y>830</y>
+        <width>191</width>
+        <height>41</height>
+       </rect>
+      </property>
+      <property name="text">
+       <string>参数设置</string>
       </property>
      </widget>
     </widget>
