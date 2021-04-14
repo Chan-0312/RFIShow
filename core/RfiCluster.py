@@ -113,6 +113,8 @@ class RfiCluster():
             count += 1
 
         plt.title('Cluster Show\n', size=15)
+        plt.xlim([self.X_reduce[:, 0].min(), self.X_reduce[:, 0].max()])
+        plt.ylim([self.X_reduce[:, 1].min(), self.X_reduce[:, 1].max()])
         plt.xlabel('Dim_1', size=15)
         plt.ylabel('Dim_2', size=15)
         plt.tight_layout()
