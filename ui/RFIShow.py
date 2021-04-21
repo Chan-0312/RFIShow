@@ -17,7 +17,7 @@
 
 from PyQt5 import QtGui, QtCore, QtWidgets
 from ui.main_page import MainPage
-from ui.rfishow_page import RfishowPage
+from ui.rfi_detect_page import RfiDetectPage
 from ui.rfifeature_page import RfifeaturePage
 from ui.rficluster_page import RficlusterPage
 from ui.info_page import InfoPage
@@ -41,7 +41,7 @@ class RFIShow(QtWidgets.QWidget):
         self.main_page = MainPage(self.Stack)
         self.Stack.addWidget(self.main_page)
 
-        self.rfishow_page = RfishowPage(self.Stack)
+        self.rfishow_page = RfiDetectPage(self.Stack)
         self.Stack.addWidget(self.rfishow_page)
 
         self.rfifeature_page = RfifeaturePage(self.Stack)

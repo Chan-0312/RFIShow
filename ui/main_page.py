@@ -53,7 +53,7 @@ class MainPage(QtWidgets.QWidget):
         self.pb_to_p1.setGeometry(QtCore.QRect(1400, 200, 480, 100))
         font.setPointSize(16)
         self.pb_to_p1.setFont(font)
-        self.pb_to_p1.setText("RFI消解")
+        self.pb_to_p1.setText("RFI检测")
         self.pb_to_p1.setObjectName("pb_to_p1")
 
         self.pb_to_p2 = QtWidgets.QPushButton(self)

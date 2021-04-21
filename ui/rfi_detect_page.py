@@ -7,7 +7,7 @@
 
 @Software:  RFIShow
 
-@File    :  rfishow_page.py
+@File    :  rfi_detect_page.py
 
 @Time    :  2021.4.16
 
@@ -225,23 +225,23 @@ class SettingsPage(QtWidgets.QWidget):
         self.insertSignal.emit()
 
 
-class RfishowPage(QtWidgets.QWidget):
+class RfiDetectPage(QtWidgets.QWidget):
     insertSignal = QtCore.pyqtSignal()
     def __init__(self, Stack):
 
-        super(RfishowPage, self).__init__()
+        super(RfiDetectPage, self).__init__()
 
         # 获取Stack类
         self.Stack = Stack
 
         self.setGeometry(0, 0, 1920, 1024)
-        self.setObjectName('RfishowPage')
+        self.setObjectName('RfiDetectPage')
 
         font = QtGui.QFont()
         font.setFamily("Arial")
 
         self.lb_title = QtWidgets.QLabel(self)
-        self.lb_title.setText("RFI消解")
+        self.lb_title.setText("RFI检测")
         self.lb_title.setGeometry(QtCore.QRect(0, 0, 1920, 100))
         font.setPointSize(48)
         self.lb_title.setFont(font)
@@ -305,7 +305,7 @@ class RfishowPage(QtWidgets.QWidget):
         if args["rfishow_page"]["mask_kwargs"] == "None":
             mask_kwargs = {}
         else:
-            mask_kwargs = dict(s.split("=") for s in args["rfishow_page"]["mask_kwargs"].split())
+            mask_kwargs = dict(s.split("=") for s in args["rfishow_page"]["mask_kwargs"].split("|"))
 
         self.rfi_f = RfiFeatures(args["rfishow_page"]["fits_path"],
                                  args["rfishow_page"]["mask_mode"],
