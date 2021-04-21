@@ -1,10 +1,7 @@
 import numpy as np
 from numba import njit, prange
 from scipy.sparse.linalg import spsolve
-from scipy.linalg import cholesky
-from scipy.optimize import curve_fit
 from scipy import sparse
-from scipy.stats import norm
 
 
 def ArPLS(y, lam=1e4, ratio=0.05, itermax=10):

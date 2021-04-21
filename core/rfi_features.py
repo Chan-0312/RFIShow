@@ -7,7 +7,7 @@
 
 @Software:  RFIShow
 
-@File    :  RfiFeatures.py
+@File    :  rfi_features.py
 
 @Time    :  2021.4.9
 
@@ -21,24 +21,24 @@ import pandas as pd
 from astropy.io import fits
 from tqdm import tqdm
 from skimage import measure
-from .ArPRS.mitigation import arpls_mask, st_mask
+from core.mitigation import *
 import matplotlib.pyplot as plt
 import matplotlib.patches as patches
-
-
+from core.utils import fig2data
 
 # 读取数据header
-class FastArg():
+class _FastArg:
+
     def __init__(self, hdu):
         """
         读取fast文件的参数
         :param hdu: 文件头
         """
-        self.NAXIS2 = hdu[1].header['NAXIS2']       # 数据块数量(每个数据块时间轴是连续的)
-        self.NSBLK = hdu[1].header['NSBLK']         # 一个数据块的时间采集量(即矩阵宽)
-        self.NPOL = hdu[1].header['NPOL']           # 极化数(我们默认选择第二个)
-        self.NCHAN = hdu[1].header['NCHAN']         # 一个数据块频率通道数(即矩阵高)
-        self.TBIN = hdu[1].header['TBIN']           # 采样时间间隔
+        self.NAXIS2 = hdu[1].header['NAXIS2']  # 数据块数量(每个数据块时间轴是连续的)
+        self.NSBLK = hdu[1].header['NSBLK']  # 一个数据块的时间采集量(即矩阵宽)
+        self.NPOL = hdu[1].header['NPOL']  # 极化数(我们默认选择第二个)
+        self.NCHAN = hdu[1].header['NCHAN']  # 一个数据块频率通道数(即矩阵高)
+        self.TBIN = hdu[1].header['TBIN']  # 采样时间间隔
         self.DAT_FREQ = hdu[1].data["DAT_FREQ"][0]  # 频率数据
 
     def print(self):
@@ -53,19 +53,37 @@ class FastArg():
         print("TBIN:", self.TBIN)
         print("DAT_FREQ:", self.DAT_FREQ)
 
-class RfiFeatures():
 
-    def __init__(self, fits_path):
+class RfiFeatures:
+
+    def __init__(self, fits_path, mask_mode="arpls_mask", **kwargs):
         """
         提取FAST数据的RFI, 并显示局部图像信息。
 
         :param fits_path: FAST文件路径(目前仅支持fits文件格式)
-        """
+        :param mask_mode: RFI检测的算法模型
+            - 'arpls_mask': ArPRS算法
+            - 'st_mask': sum_threshold算法
+            - 'template_mask': mitigation模板函数(测试用, 用户可以在core.mitigation自行定义mitigation算法)。
+            - 用户也可以直接传入自定义算法函数
+        :param kwargs: mask_mode需要的参数
 
+        """
         hdu = fits.open(fits_path)
 
+        self.mask_mode_name = mask_mode
+
+        if mask_mode == 'arpls_mask':
+            mask_mode = arpls_mask
+        elif mask_mode == 'st_mask':
+            mask_mode = st_mask
+        elif mask_mode == 'template_mask':
+            mask_mode = template_mask
+
+        self.mask_mode = mask_mode
+        self.mask_kwargs = kwargs
         self.fits_path = fits_path
-        self.fits_args = FastArg(hdu)
+        self.fits_args = _FastArg(hdu)
         self.fits_data = hdu[1].data['DATA']
 
         # 存放临时数据，避免重复处理RFI
@@ -75,14 +93,11 @@ class RfiFeatures():
         self.line_mask = None
         self.blob_mask = None
 
-
-    def get_mask(self, block_num, mask_mode=arpls_mask, **kwargs):
+    def get_mask(self, block_num):
         """
         获取单个数据块的RFI mask矩阵
 
         :param block_num: 第几个数据块
-        :param mask_mode: RFI检测的算法模型
-        :param kwargs: mask_mode需要的参数
         :return:
             data: 原始强度矩阵
             mask: 完整的RFI mask矩阵
@@ -90,18 +105,16 @@ class RfiFeatures():
             blob_mask: 点团状RFI mask矩阵
         """
 
-        assert block_num < self.fits_args.NAXIS2
-
-        data = self.fits_data[block_num, :, 1, :, 0].T[::-1]
-        mask, line_mask, blob_mask = mask_mode(data, **kwargs)
+        assert 0 <= block_num < self.fits_args.NAXIS2
 
         self.block_num = block_num
-        self.data = data
-        self.mask = mask
-        self.line_mask = line_mask
-        self.blob_mask = blob_mask
+        self.data = self.fits_data[block_num, :, 1, :, 0].T[::-1]
+        self.mask = self.mask_mode(self.data, **self.mask_kwargs)
+        self.line_mask = (self.mask.sum(axis=1) == self.mask.shape[1])
+        self.blob_mask = self.mask.copy()
+        self.blob_mask[self.line_mask, :] = False
 
-        return data, mask, line_mask, blob_mask
+        return self.data, self.mask, self.line_mask, self.blob_mask
 
     def get_line_feature(self, data, line_mask):
         """
@@ -149,7 +162,6 @@ class RfiFeatures():
 
         return line_features
 
-
     def get_blob_feature(self, data, blob_mask, connectivity=1):
         """
         提取点状的RFI特征。
@@ -164,8 +176,8 @@ class RfiFeatures():
         blob_features = []
 
         mask_labels = measure.label(blob_mask,
-                                   connectivity=connectivity,
-                                   background=False)
+                                    connectivity=connectivity,
+                                    background=False)
 
         for label in np.unique(mask_labels):
             if label == 0:
@@ -228,13 +240,11 @@ class RfiFeatures():
             duration：持续时间
             data_mean：噪声强度均值
             data_var：噪声强度方差
-
         :return:
         """
 
         rfi_features = []
         for num_block in tqdm(range(self.fits_args.NAXIS2)):
-        # for num_block in tqdm(range(3)):
             data, mask, line_mask, blob_mask = self.get_mask(num_block)
 
             line_feature = self.get_line_feature(data, line_mask)
@@ -249,42 +259,99 @@ class RfiFeatures():
 
         return rfi_features
 
-    def rfi_show(self, block_num, show_mask=True, save_fig=None):
+    def rfi_show(self, block_num, show_mask=0, show_other=False,save_fig=None):
         """
         显示整个数据块图像
 
         :param block_num: 显示fits文件的数据块的编号
         :param show_mask: 是否显示mask
-        :param save_fig: 保存路径(save_fig+rfi_image.png)，None不保存立即显示
-        :return: None
+            - 0 不显示mask
+            - 1 显示mask
+            - 2 显示带状mask
+            - 3 显示点状mask
+        :param save_fig: 保存图像路径，None不保存
+        :return: PIL图像格式
         """
         if self.block_num == block_num:
             data = self.data
             mask = self.mask
+            line_mask = self.line_mask
+            blob_mask = self.blob_mask
         else:
-            data, mask, _, _ = self.get_mask(block_num)
+            data, mask, line_mask, blob_mask = self.get_mask(block_num)
 
-        plt.figure(figsize=(10, 8), dpi=128)
-        if show_mask:
-            plt.imshow(np.ma.array(data, mask=mask), aspect='auto', cmap='jet')
+        if show_other:
+            fig, ax = plt.subplots(3, figsize=(10, 8), dpi=128, sharex=True, sharey=True)
+            ax[0] = plt.subplot2grid((4, 7), (0, 0), colspan=6, rowspan=3)
+            ax[1] = plt.subplot2grid((4, 7), (3, 0), colspan=6)
+            ax[2] = plt.subplot2grid((4, 7), (0, 6), rowspan=3)
+
+            if show_mask == 1:
+                ax[0].imshow(np.ma.array(data, mask=mask), aspect='auto', cmap='jet')
+            elif show_mask == 2:
+                line_index = np.where(line_mask)[0]
+                line_mask = np.zeros_like(data)
+                line_mask[line_index, :] = True
+                ax[0].imshow(np.ma.array(data, mask=line_mask), aspect='auto', cmap='jet')
+            elif show_mask == 3:
+                ax[0].imshow(np.ma.array(data, mask=blob_mask), aspect='auto', cmap='jet')
+            else:
+                ax[0].imshow(data, aspect='auto', cmap='jet')
+
+            # ax[0].set_yticks(np.arange(self.fits_args.DAT_FREQ)[::self.fits_args.DAT_FREQ//5])
+            # ax[0].yticks(np.arange(0, data.shape[0], data.shape[0] // 5),
+            #            np.round(self.fits_args.DAT_FREQ[::data.shape[0] // 5][::-1], decimals=2))
+
+            ax[0].set_title('RFI Data\n%s,block=%d' %
+                            (self.fits_path.split('/')[-1], block_num), size=15)
+            ax[0].set_ylabel('Frequency (MHz)', size=15)
+
+            ax[1].plot(data.sum(axis=0), 'k')
+            ax[1].set_xlabel('Time', size=15)
+            ax[1].set_ylabel('Intensity', size=15)
+            ax[1].set_xlim([0, self.fits_args.NSBLK])
+
+            ax[2].plot(data.sum(axis=1), self.fits_args.DAT_FREQ[::-1], 'k')
+            ax[2].set_ylim([self.fits_args.DAT_FREQ[0], self.fits_args.DAT_FREQ[-1]])
+            ax[2].set_xlim([0, data.sum(axis=1).mean()*5])
+            ax[2].set_xlabel('SED', fontsize=15)
+
+            plt.setp(ax[0].get_xticklabels(), visible=False)
+            plt.setp(ax[1].get_yticklabels(), visible=False)
+            plt.setp(ax[2].get_yticklabels(), visible=False)
+            plt.setp(ax[2].get_xticklabels(), visible=False)
+            plt.tight_layout()
+            plt.subplots_adjust(wspace=0, hspace=0)
         else:
-            plt.imshow(data, aspect='auto', cmap='jet')
+            fig = plt.figure(figsize=(10, 8), dpi=128)
+            if show_mask == 1:
+                plt.imshow(np.ma.array(data, mask=mask), aspect='auto', cmap='jet')
+            elif show_mask == 2:
+                line_index = np.where(line_mask)[0]
+                line_mask = np.zeros_like(data)
+                line_mask[line_index, :] = True
+                plt.imshow(np.ma.array(data, mask=line_mask), aspect='auto', cmap='jet')
+            elif show_mask == 3:
+                plt.imshow(np.ma.array(data, mask=blob_mask), aspect='auto', cmap='jet')
+            else:
+                plt.imshow(data, aspect='auto', cmap='jet')
 
-        plt.yticks(np.arange(0, data.shape[0], data.shape[0] // 5),
-                   np.round(self.fits_args.DAT_FREQ[::data.shape[0] // 5][::-1], decimals=2))
+            plt.yticks(np.arange(0, data.shape[0], data.shape[0] // 5),
+                       np.round(self.fits_args.DAT_FREQ[::data.shape[0] // 5][::-1], decimals=2))
 
-        plt.title('RFI Data\n%s,block=%d' %
-                  (self.fits_path.split('/')[-1], block_num), size=15)
-        plt.xlabel('Time (s)', size=15)
-        plt.ylabel('Frequency (MHz)', size=15)
-        plt.xticks(size=15)
-        plt.tight_layout()
+            plt.title('RFI Data\n%s,block=%d' %
+                      (self.fits_path.split('/')[-1], block_num), size=15)
+            plt.xlabel('Time', size=15)
+            plt.ylabel('Frequency (MHz)', size=15)
+            plt.xticks(size=15)
+            plt.tight_layout()
 
-        if save_fig != None:
-            plt.savefig(save_fig+'rfi_image.png')
-        else:
-            plt.show()
+        if save_fig is not None:
+            plt.savefig(save_fig)
+        # else:
+            # plt.show()
 
+        return fig2data(fig)
 
     def part_rfi_show(self, rfi_feature, edge_size=2, save_fig=None):
         """
@@ -292,8 +359,8 @@ class RfiFeatures():
 
         :param rfi_feature: 需要显示的rfi特征
         :param edge_size: 局部显示边框
-        :param save_fig: 保存路径(save_fig+rfi_feature_image.png)，None不保存立即显示
-        :return: None
+        :param save_fig: 保存图像路径，None不保存
+        :return: PIL图像格式
         """
         # 显示局部上限扩展尺寸
         edge_left = edge_size
@@ -346,7 +413,7 @@ class RfiFeatures():
         showdata = data[show_y:show_y + show_h, show_x:show_x + show_w]
         showmask = mask[show_y:show_y + show_h, show_x:show_x + show_w]
 
-        plt.figure(figsize=(10, 8), dpi=128)
+        fig = plt.figure(figsize=(10, 8), dpi=128)
         plt.imshow(np.ma.array(showdata, mask=showmask), aspect='auto', cmap='jet')
         # 在局部图像画出矩形框
         ax = plt.gca()
@@ -375,10 +442,11 @@ class RfiFeatures():
                   (fitsname.split('/')[-1], num_block, y, bandwidth, data_mean, data_var), size=15)
         plt.tight_layout()
 
-        if save_fig != None:
-            plt.savefig(save_fig+'rfi_feature_image.png')
-        else:
-            plt.show()
+        if save_fig is not None:
+            plt.savefig(save_fig)
+        # else:
+        #     plt.show()
+        return fig2data(fig)
 
     def _continuation_merge(self, mask_list):
         """
@@ -403,11 +471,12 @@ class RfiFeatures():
         return mask_groups
 
 
-def get_rfi_features(fits_dir):
+def get_rfi_features(fits_dir, save_csv_name="./rfi_feature_data.csv"):
     """
     获取整个路径下所有fits文件的RFI特征
 
     :param fits_dir: FAST数据路径
+    :param save_csv_name: csv文件保存路径
     :return: 返回一个DataFrame, 包含特征：
         fits_name: fits文件名(None)
         num_block: 数据块编号(None)
@@ -440,7 +509,7 @@ def get_rfi_features(fits_dir):
     for fits_name in tqdm(fits_list):
         rfi_f = RfiFeatures(fits_dir + fits_name)
         rfi_features = np.array(rfi_f.get_rfi_features())
-        rfi_feature_df = rfi_feature_df.append(pd.DataFrame(data=rfi_features, columns= cols_name),
+        rfi_feature_df = rfi_feature_df.append(pd.DataFrame(data=rfi_features, columns=cols_name),
                                                ignore_index=True)
 
     # 修改数据类型
@@ -457,6 +526,6 @@ def get_rfi_features(fits_dir):
     rfi_feature_df.data_mean = rfi_feature_df.data_mean.astype(np.float32)
     rfi_feature_df.data_var = rfi_feature_df.data_var.astype(np.float32)
 
-    rfi_feature_df.to_csv("./rfi_feature_data.csv", index=False)
+    rfi_feature_df.to_csv(save_csv_name, index=False)
 
     return rfi_feature_df

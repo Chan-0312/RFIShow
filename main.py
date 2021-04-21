@@ -1,11 +1,9 @@
 import sys
-import ui.main_ui as main_ui
-from PyQt5.QtWidgets import QApplication, QMainWindow
+from ui.RFIShow import RFIShow
+from PyQt5 import QtWidgets
 
 if __name__ == '__main__':
-    app = QApplication(sys.argv)
-    MainWindow = QMainWindow()
-    ui = main_ui.Ui_MainWindow()
-    ui.setupUi(MainWindow)
-    MainWindow.show()
+    app = QtWidgets.QApplication(sys.argv)
+    demo = RFIShow()
+    demo.show()
     sys.exit(app.exec_())

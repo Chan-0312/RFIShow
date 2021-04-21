@@ -74,7 +74,7 @@ def _sumthreshold(data, mask, i, chi, ds0, ds1):
     return tmp_mask
 
 
-def _run_sumthreshold(data, init_mask, eta, M, chi_i, sm_kwargs):
+def _run_sumthreshold(data, init_mask, eta, M, chi_i, **sm_kwargs):
     """
     Perform one SumThreshold operation: sum the un-masked data after
     subtracting a smooth background and threshold it.
@@ -193,15 +193,13 @@ def blob_mitigation(data, baseline, line_mask, threshold):
     return point_mask
 
 
-def arpls_mask(data, eta_i=[0.5, 0.55, 0.62, 0.75, 1]):
+def arpls_mask(data):
     """
     Computes a mask to cover the RFI in a data set based on ArPLS-ST.
 
     Inputs:
         data:
             array containing the signal and RFI
-        eta_i:
-            List of sensitivities
 
     Outputs:
         mask:
@@ -231,14 +229,14 @@ def arpls_mask(data, eta_i=[0.5, 0.55, 0.62, 0.75, 1]):
     # blob RFI mitigation
     mask = blob_mitigation(data, final_curve, line_mask, 5 * popt_point)
 
-    blob_mask = mask.copy()
-
     mask[line_index] = True
+    return mask
+    # blob_mask = mask.copy()
+    # mask[line_index] = True
+    # return mask, line_mask, blob_mask
 
-    return mask, line_mask, blob_mask
 
-
-def st_mask(data, eta_i=[0.5, 0.55, 0.62, 0.75, 1], chi_1=35000, sm_kwargs=None, di_kwargs=None):
+def st_mask(data, eta_i=[0.5, 0.55, 0.62, 0.75, 1], chi_1=20):
     """
     Computes a mask to cover the RFI in a data set.
     copy from https://github.com/cosmo-ethz/seek/blob/master/seek/mitigation/sum_threshold.py
@@ -246,28 +244,25 @@ def st_mask(data, eta_i=[0.5, 0.55, 0.62, 0.75, 1], chi_1=35000, sm_kwargs=None,
     :param data: array containing the signal and RFI
     :param chi_1: First threshold
     :param eta_i: List of sensitivities
-    :param normalize_standing_waves: whether to normalize standing waves
-    :param suppress_dilation: if true, mask dilation is suppressed
-    :param plotting: True if statistics plot should be displayed
-    :param sm_kwargs: smoothing key words
-    :param di_kwargs: dilation key words
 
     :return mask: the mask covering the identified RFI
     """
+    # 将字符串转换
+    if isinstance(chi_1, str):
+        chi_1 = int(chi_1)
+    if isinstance(eta_i, str):
+        eta_i = eta_i.replace('[', '')
+        eta_i = eta_i.replace(']', '')
+        eta_i = list(map(float, eta_i.split(",")))
 
     mask = np.full(data.shape, False)
     chi_i = chi_1 / p ** np.log2(m)
 
     st_mask = mask
     for eta in eta_i:
-        st_mask = _run_sumthreshold(data, st_mask, eta, M, chi_i, sm_kwargs)
+        st_mask = _run_sumthreshold(data, st_mask, eta, M, chi_i)
 
-    dilated_mask = st_mask
-
-    if di_kwargs is not None:
-        dilated_mask = binary_mask_dilation(dilated_mask.astype(np.float) - mask.astype(np.float), **di_kwargs)
-
-    return dilated_mask + mask
+    return st_mask
 
 
 def get_sm_kwargs(kernel_m=KERNEL_M, kernel_n=KERNEL_N, sigma_m=SIGMA_M, sigma_n=SIGMA_N):
