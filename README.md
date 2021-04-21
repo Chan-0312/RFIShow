@@ -87,20 +87,21 @@ $ python main.py
 ```
 
 ## 四、文件架构介绍
-- `bin`：存放脱离界面的一些可单独执行的功能包。
-- `conf`：存放环境和用户相关的配置文件。
-- `core`：存放核心功能代码。
-    - `mitigation`：各种RFI检测算法包。
-    - `rfi_features.py`: RFI特征相关的核心代码。
-    - `rfi_cluster.py`：RFI特征聚类相关的核心代码。
-    - `utils.py`：其他一些有效的代码。
-- `data`：存放相关检测数据、临时文件和日志文件。
-    - `FAST_data`：存放fast数据(未上传)。
-    - `log`：存放日志文件
-    - `temp_data`：存放中间临时文件。
-- `resource`：存放UI界面相关资源文件(未上传)。
-- `test`：存放模块测试代码。
-- `ui`：存放界面相关代码。
+- [bin](/bin)：存放脱离界面的一些可单独执行的功能包。
+- [conf](/conf)：存放环境和用户相关的配置文件。
+- [core](/core)：存放核心功能代码。
+    - [mitigation](/core/mitigation)：各种RFI检测算法包。
+    - [rfi_features.py](/core/rfi_features.py): RFI特征相关的核心代码。
+    - [rfi_cluster.py](/core/rfi_cluster.py)：RFI特征聚类相关的核心代码。
+    - [utils.py](/core/utils.py)：其他一些有效的代码。
+- [data]()：存放相关检测数据、临时文件和日志文件。
+    - [FAST_data]()：存放fast数据(未上传)。
+    - [log]()：存放日志文件。
+    - [temp_data]()：存放中间临时文件。
+- [resource]()：存放UI界面相关资源文件(未上传)。
+- [test](/test)：存放模块测试代码。
+- [ui](/ui)：存放界面相关代码。
+- [main.py](/main.py): 软件启动函数
 
 ## 五、版本记录
 - **~2021.4.14---v0.0**：
