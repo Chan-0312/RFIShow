@@ -59,7 +59,7 @@ def save_sttings(args, save_dict_list):
 整个系统需要的一些参数文件
 """
 args = {
-    "version": "v0.2",
+    "version": "v0.1",
     "author": "熊盛春",
     "project_path": sys.path[0],
     "conf_path": "/conf/rfishow.cfg",
