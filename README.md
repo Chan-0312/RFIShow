@@ -12,8 +12,8 @@
 
 - [x] **检测文件选择**：用户可选择本地的一个fits文件进行分析。	
 - [x] **RFI检测算法选择**：提供各种RFI mask检测算法供用户选择使用，支持在线交互参数的调节。
-  - [x] [arpls_mask]()
-  - [x] [st_mask](https://www.baidu.com)
+  - [x] [arpls_mask](http://zmtt.bao.ac.cn/GPPS/RFI/)
+  - [x] [st_mask](https://github.com/cosmo-ethz/seek)
   - [x] template_mask：用户自定义RFI检测，需要按照一个的格式存放于指定位置。(参考`/core/mitigation/TemplateMask`存放于`/core/mitigation`路径下)
 - [x] **图片显示的参数设置**：
   - [x] 是否显示RFI mask
