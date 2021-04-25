@@ -23,8 +23,15 @@ from core.rfi_features import RfiFeatures
 
 
 class SettingsPage(QtWidgets.QWidget):
+    """
+    参数设置界面
+    """
 
     def __init__(self, insertSignal):
+        """
+        参数设置界面
+        :param insertSignal: 回传的信号
+        """
         super(SettingsPage, self).__init__()
 
         # 继承这个信号
@@ -102,6 +109,12 @@ class SettingsPage(QtWidgets.QWidget):
         self.label_4.setAlignment(QtCore.Qt.AlignCenter)
         self.label_4.setObjectName("label_4")
         self.label_4.setText("数据块编号")
+        self.label_8 = QtWidgets.QLabel(self)
+        self.label_8.setGeometry(QtCore.QRect(410, 150, 130, 40))
+        self.label_8.setFont(font)
+        self.label_8.setAlignment(QtCore.Qt.AlignCenter)
+        self.label_8.setObjectName("label_8")
+        self.label_8.setText("极化通道")
         self.label_5 = QtWidgets.QLabel(self)
         self.label_5.setGeometry(QtCore.QRect(20, 230, 130, 40))
         self.label_5.setFont(font)
@@ -151,12 +164,20 @@ class SettingsPage(QtWidgets.QWidget):
         self.pb_select_fits.setObjectName("pb_select_fits")
         self.pb_select_fits.setText("文件选择")
         self.sb_block_num = QtWidgets.QSpinBox(self)
-        self.sb_block_num.setGeometry(QtCore.QRect(160, 150, 620, 40))
+        self.sb_block_num.setGeometry(QtCore.QRect(160, 150, 260, 40))
         self.sb_block_num.setFont(font)
         self.sb_block_num.setAlignment(QtCore.Qt.AlignCenter)
         self.sb_block_num.setAccelerated(True)
         self.sb_block_num.setMaximum(255)
         self.sb_block_num.setObjectName("sb_block_num")
+
+        self.sb_npol_num = QtWidgets.QSpinBox(self)
+        self.sb_npol_num.setGeometry(QtCore.QRect(520, 150, 260, 40))
+        self.sb_npol_num.setFont(font)
+        self.sb_npol_num.setAlignment(QtCore.Qt.AlignCenter)
+        self.sb_npol_num.setAccelerated(True)
+        self.sb_npol_num.setMaximum(1)
+        self.sb_npol_num.setObjectName("sb_npol_num")
 
         self.le_mask_mode = QtWidgets.QLineEdit(self)
         self.le_mask_mode.setEnabled(True)
@@ -171,20 +192,20 @@ class SettingsPage(QtWidgets.QWidget):
         self.le_mask_kwargs.setFont(font)
         self.le_mask_kwargs.setObjectName("le_mask_kwargs")
 
-        self.chb_show_mask = QtWidgets.QCheckBox(self)
-        self.chb_show_mask.setGeometry(QtCore.QRect(20, 360, 130, 40))
-        self.chb_show_mask.setFont(font)
-        self.chb_show_mask.setObjectName("chb_show_mask")
-        self.chb_show_mask.setText("是否显示Mask")
+        self.chb_show_line_mask = QtWidgets.QCheckBox(self)
+        self.chb_show_line_mask.setGeometry(QtCore.QRect(20, 360, 260, 40))
+        self.chb_show_line_mask.setFont(font)
+        self.chb_show_line_mask.setObjectName("chb_show_line_mask")
+        self.chb_show_line_mask.setText("是否显示带状Mask")
 
-        self.chb_show_other = QtWidgets.QCheckBox(self)
-        self.chb_show_other.setGeometry(QtCore.QRect(200, 360, 130, 40))
-        self.chb_show_other.setFont(font)
-        self.chb_show_other.setObjectName("chb_show_other")
-        self.chb_show_other.setText("是否显示其他")
+        self.chb_show_blob_mask = QtWidgets.QCheckBox(self)
+        self.chb_show_blob_mask.setGeometry(QtCore.QRect(410, 360, 260, 40))
+        self.chb_show_blob_mask.setFont(font)
+        self.chb_show_blob_mask.setObjectName("chb_show_blob_mask")
+        self.chb_show_blob_mask.setText("是否显示点状Mask")
 
         self.pb_confirm = QtWidgets.QPushButton(self)
-        self.pb_confirm.setGeometry(QtCore.QRect(10, 420, 781, 71))
+        self.pb_confirm.setGeometry(QtCore.QRect(10, 420, 780, 70))
         font.setPointSize(24)
         self.pb_confirm.setFont(font)
         self.pb_confirm.setObjectName("pb_confirm")
@@ -201,8 +222,19 @@ class SettingsPage(QtWidgets.QWidget):
         self.le_mask_mode.setText(rfishow_page_args["mask_mode"])
         self.le_mask_kwargs.setText(rfishow_page_args["mask_kwargs"])
         self.sb_block_num.setValue(rfishow_page_args["block_num"])
-        self.chb_show_mask.setChecked(rfishow_page_args["show_mask"])
-        self.chb_show_other.setChecked(rfishow_page_args["show_other"])
+        self.sb_npol_num.setValue(rfishow_page_args["npol_num"])
+        if rfishow_page_args["show_mask"] == 1:
+            self.chb_show_line_mask.setChecked(True)
+            self.chb_show_blob_mask.setChecked(True)
+        elif rfishow_page_args["show_mask"] == 2:
+            self.chb_show_line_mask.setChecked(True)
+            self.chb_show_blob_mask.setChecked(False)
+        elif rfishow_page_args["show_mask"] == 3:
+            self.chb_show_line_mask.setChecked(False)
+            self.chb_show_blob_mask.setChecked(True)
+        else:
+            self.chb_show_line_mask.setChecked(False)
+            self.chb_show_blob_mask.setChecked(False)
 
     def _pb_select_fits_action(self):
         absolute_path = QtWidgets.QFileDialog.getOpenFileName(self, '请选择fits文件',
@@ -210,12 +242,23 @@ class SettingsPage(QtWidgets.QWidget):
         self.le_select_fits.setText(absolute_path[0])
 
     def _pb_confirm_action(self):
+        if self.le_select_fits.text() == "":
+            return
         args["rfishow_page"]["fits_path"] = self.le_select_fits.text()
         args["rfishow_page"]["mask_mode"] = self.le_mask_mode.text()
         args["rfishow_page"]["mask_kwargs"] = self.le_mask_kwargs.text()
         args["rfishow_page"]["block_num"] = self.sb_block_num.value()
-        args["rfishow_page"]["show_mask"] = self.chb_show_mask.isChecked()
-        args["rfishow_page"]["show_other"] = self.chb_show_other.isChecked()
+        args["rfishow_page"]["npol_num"] = self.sb_npol_num.value()
+        show_mask = 0
+        if self.chb_show_line_mask.isChecked() and self.chb_show_blob_mask.isChecked():
+            show_mask = 1
+        elif self.chb_show_line_mask.isChecked() and not self.chb_show_blob_mask.isChecked():
+            show_mask = 2
+        elif not self.chb_show_line_mask.isChecked() and self.chb_show_blob_mask.isChecked():
+            show_mask = 3
+        else:
+            show_mask = 0
+        args["rfishow_page"]["show_mask"] = show_mask
 
         # 保存环境参数
         save_sttings(args, args["save_dict_list"])
@@ -225,9 +268,17 @@ class SettingsPage(QtWidgets.QWidget):
         self.insertSignal.emit()
 
 
+
 class RfiDetectPage(QtWidgets.QWidget):
+    """
+    RFI 检测界面
+    """
     insertSignal = QtCore.pyqtSignal()
     def __init__(self, Stack):
+        """
+
+        :param Stack: Stack界面类
+        """
 
         super(RfiDetectPage, self).__init__()
 
@@ -263,53 +314,72 @@ class RfiDetectPage(QtWidgets.QWidget):
         self.image_1.setScaledContents(True)
 
         self.image_2 = QtWidgets.QLabel(self)
-        self.image_2.setGeometry(QtCore.QRect(1140, 120, 550, 440))
+        self.image_2.setGeometry(QtCore.QRect(1140, 120, 750, 600))
         self.image_2.setStyleSheet("background-color: rgb(0, 255, 127);")
         self.image_2.setAlignment(QtCore.Qt.AlignCenter)
         self.image_2.setObjectName("image_2")
         self.image_2.setScaledContents(True)
 
-        self.image_3 = QtWidgets.QLabel(self)
-        self.image_3.setGeometry(QtCore.QRect(1140, 560, 550, 440))
-        self.image_3.setStyleSheet("background-color: rgb(0, 255, 127);")
-        self.image_3.setAlignment(QtCore.Qt.AlignCenter)
-        self.image_3.setObjectName("image_3")
-        self.image_3.setScaledContents(True)
-
         self.pb_set = QtWidgets.QPushButton(self)
-        self.pb_set.setGeometry(QtCore.QRect(1720, 120, 150, 80))
+        self.pb_set.setGeometry(QtCore.QRect(1140, 720, 150, 80))
         self.pb_set.setFont(font)
         self.pb_set.setText("参数设置")
         self.pb_set.setObjectName("pb_set")
 
         self.pb_save_result = QtWidgets.QPushButton(self)
-        self.pb_save_result.setGeometry(QtCore.QRect(1720, 220, 150, 80))
+        self.pb_save_result.setGeometry(QtCore.QRect(1140, 820, 150, 80))
         self.pb_save_result.setFont(font)
         self.pb_save_result.setText("保存结果")
         self.pb_save_result.setObjectName("pb_save_result")
 
-        self.pb_batch_deal = QtWidgets.QPushButton(self)
-        self.pb_batch_deal.setGeometry(QtCore.QRect(1720, 320, 150, 80))
-        self.pb_batch_deal.setFont(font)
-        self.pb_batch_deal.setText("批量处理")
-        self.pb_batch_deal.setObjectName("pb_batch_deal")
+        self.pb_part_analysis = QtWidgets.QPushButton(self)
+        self.pb_part_analysis.setGeometry(QtCore.QRect(1140, 920, 150, 80))
+        self.pb_part_analysis.setFont(font)
+        self.pb_part_analysis.setText("局部分析")
+        self.pb_part_analysis.setObjectName("pb_part_analysis")
 
+        # 信号连接
         self.pb_return.clicked.connect(self._pb_return_action)
         self.pb_set.clicked.connect(self._pb_set_action)
         self.pb_save_result.clicked.connect(self._pb_save_result_action)
-        self.pb_batch_deal.clicked.connect(self._pb_batch_deal_action)
-
+        self.pb_part_analysis.clicked.connect(self._pb_part_analysis_action)
         self.insertSignal.connect(self._show_image)
-
 
         if args["rfishow_page"]["mask_kwargs"] == "None":
             mask_kwargs = {}
         else:
             mask_kwargs = dict(s.split("=") for s in args["rfishow_page"]["mask_kwargs"].split("|"))
 
-        self.rfi_f = RfiFeatures(args["rfishow_page"]["fits_path"],
-                                 args["rfishow_page"]["mask_mode"],
-                                 **mask_kwargs)
+        if args["rfishow_page"]["fits_path"] != "":
+            self.rfi_f = RfiFeatures(args["rfishow_page"]["fits_path"],
+                                     args["rfishow_page"]["mask_mode"],
+                                     **mask_kwargs)
+        else:
+            self.rfi_f = None
+
+
+    def mousePressEvent(self, event):
+        """
+        鼠标按下事件
+        :param event:
+        :return:
+        """
+        if self.pb_part_analysis.text()=="结束分析" and event.button() == 1:
+            xy = event.pos() - QtCore.QPoint(140, 191)
+            x = int(xy.x() / 827 * 1023)
+            y = int(xy.y() / 554 * 4095)
+            if x < 0 or x > 1023 or y < 0 or y > 4095:
+                return
+
+            img = self.rfi_f.part_rfi_show(block_num=args["rfishow_page"]["block_num"],
+                                           npol_num=args["rfishow_page"]["npol_num"],
+                                           box_center=[x, y],
+                                           edge_size=args["rfishow_page"]["edge_size"],
+                                           save_fig=None)
+            pix = img.toqpixmap()
+            self.image_2.setPixmap(pix)
+
+
 
     def _pb_return_action(self):
         self.Stack.setCurrentIndex(0)
@@ -323,77 +393,44 @@ class RfiDetectPage(QtWidgets.QWidget):
         if absolute_path == "":
             return
 
-        if self.rfi_f.mask is None:
+        if self.rfi_f is None or self.rfi_f.mask is None:
             QtWidgets.QMessageBox.information(self, "错误", "请先设置参数!")
         else:
             image_1 = self.image_1.pixmap().toImage()
             image_2 = self.image_2.pixmap().toImage()
-            image_3 = self.image_3.pixmap().toImage()
             absolute_path = absolute_path + "/" + args["rfishow_page"]["fits_path"].split("/")[-1] + "_" + str(args["rfishow_page"]["block_num"])
             image_1.save(absolute_path + "_1.png")
             image_2.save(absolute_path + "_2.png")
-            image_3.save(absolute_path + "_3.png")
             pickle.dump(self.rfi_f.mask, open(absolute_path + "_mask.pkl", 'wb'))
             QtWidgets.QMessageBox.information(self, "提示", "保存成功!")
 
-
-    def _pb_batch_deal_action(self):
-        absolute_path = QtWidgets.QFileDialog.getExistingDirectory(self, "请选择数据路径", ".")
-        if absolute_path == "":
-            return
-        reply = QtWidgets.QMessageBox.information(self, "提示", "是否保存图片数据?",
-                                                  QtWidgets.QMessageBox.Yes | QtWidgets.QMessageBox.No,
-                                                  QtWidgets.QMessageBox.No)
-        if reply == QtWidgets.QMessageBox.Yes:
-            save_image_flag = True
+    def _pb_part_analysis_action(self):
+        if self.pb_part_analysis.text() == "局部分析":
+            self.pb_part_analysis.setText("结束分析")
         else:
-            save_image_flag = False
-            
-        # print(absolute_path, save_image_flag)
-
-
-
+            self.pb_part_analysis.setText("局部分析")
 
     def _show_image(self):
         self.Stack.setCurrentIndex(4)
         QtWidgets.QApplication.processEvents()
-
-        if args["rfishow_page"]["show_mask"] == False:
-            show_mask = 0
-        else:
-            show_mask = 1
 
         if args["rfishow_page"]["mask_kwargs"] == "None":
             mask_kwargs = {}
         else:
             mask_kwargs = dict(s.split("=") for s in args["rfishow_page"]["mask_kwargs"].split("|"))
 
-        # 这里有bug,输入的参数全部是字符串
-        if self.rfi_f.fits_path != args["rfishow_page"]["fits_path"] or self.rfi_f.mask_mode_name != args["rfishow_page"]["mask_mode"] or self.rfi_f.mask_kwargs != mask_kwargs:
+
+        if self.rfi_f is None or self.rfi_f.fast_data.FAST_NAME != args["rfishow_page"]["fits_path"] or self.rfi_f.mask_mode_name != args["rfishow_page"]["mask_mode"] or self.rfi_f.mask_kwargs != mask_kwargs:
             self.rfi_f = RfiFeatures(args["rfishow_page"]["fits_path"],
                                      args["rfishow_page"]["mask_mode"],
                                      **mask_kwargs)
 
-        img = self.rfi_f.rfi_show(args["rfishow_page"]["block_num"],
-                            show_mask=show_mask,
-                            show_other=args["rfishow_page"]["show_other"],
-                            save_fig=None)
+        img = self.rfi_f.rfi_show(block_num=args["rfishow_page"]["block_num"],
+                                  npol_num=args["rfishow_page"]["npol_num"],
+                                  show_mask=args["rfishow_page"]["show_mask"],
+                                  save_fig=None)
         pix = img.toqpixmap()
         self.image_1.setPixmap(pix)
-
-        img = self.rfi_f.rfi_show(args["rfishow_page"]["block_num"],
-                            show_mask=2,
-                            show_other=False,
-                            save_fig=None)
-        pix = img.toqpixmap()
-        self.image_2.setPixmap(pix)
-
-        img = self.rfi_f.rfi_show(args["rfishow_page"]["block_num"],
-                            show_mask=3,
-                            show_other=False,
-                            save_fig=None)
-        pix = img.toqpixmap()
-        self.image_3.setPixmap(pix)
 
         self.Stack.setCurrentIndex(1)
         QtWidgets.QApplication.processEvents()

@@ -19,6 +19,7 @@
 import sys
 from configparser import ConfigParser
 
+project_path = "F:/xscPycharm/RFIShow"
 
 def _get_settings(setting_name):
     """
@@ -28,15 +29,16 @@ def _get_settings(setting_name):
     """
 
     cf = ConfigParser()
-    cf.read(sys.path[0]+"/conf/rfishow.cfg", encoding="utf-8")
+    cf.read(project_path+"/conf/rfishow.cfg", encoding="utf-8")
     if setting_name == "rfishow_page":
         args = {
             "fits_path": cf.get("rfishow_page", "fits_path"),
             "mask_mode": cf.get("rfishow_page", "mask_mode"),
             "mask_kwargs": cf.get("rfishow_page", "mask_kwargs"),
             "block_num": cf.getint("rfishow_page", "block_num"),
-            "show_mask": cf.getboolean("rfishow_page", "show_mask"),
-            "show_other": cf.getboolean("rfishow_page", "show_other"),
+            "npol_num": cf.getint("rfishow_page", "npol_num"),
+            "show_mask": cf.getint("rfishow_page", "show_mask"),
+            "edge_size": cf.getint("rfishow_page", "edge_size"),
         }
     return args
 
@@ -53,15 +55,15 @@ def save_sttings(args, save_dict_list):
         cf.add_section(list_name)
         for key in args[list_name].keys():
             cf.set(list_name, key, str(args[list_name][key]))
-    cf.write(open(sys.path[0]+args["conf_path"], "w", encoding="utf-8"))
+    cf.write(open(project_path+args["conf_path"], "w", encoding="utf-8"))
 
 """
 整个系统需要的一些参数文件
 """
 args = {
-    "version": "v0.1",
+    "version": "v0.2",
     "author": "熊盛春",
-    "project_path": sys.path[0],
+    "project_path": project_path,
     "conf_path": "/conf/rfishow.cfg",
     "FAST_path": "/data/FAST_data/",
     "temp_data": "/data/temp_data/",
