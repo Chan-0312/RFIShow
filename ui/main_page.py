@@ -53,32 +53,22 @@ class MainPage(QtWidgets.QWidget):
         self.pb_to_p1.setGeometry(QtCore.QRect(1400, 200, 480, 100))
         font.setPointSize(16)
         self.pb_to_p1.setFont(font)
-        self.pb_to_p1.setText("RFI检测")
+        self.pb_to_p1.setText("RFI检测分析")
         self.pb_to_p1.setObjectName("pb_to_p1")
 
         self.pb_to_p2 = QtWidgets.QPushButton(self)
-        self.pb_to_p2.setGeometry(QtCore.QRect(1400, 500, 480, 100))
+        self.pb_to_p2.setGeometry(QtCore.QRect(1400, 800, 480, 100))
         font.setPointSize(16)
         self.pb_to_p2.setFont(font)
-        self.pb_to_p2.setText("RFI特征提取")
+        self.pb_to_p2.setText("RFI聚类分析")
         self.pb_to_p2.setObjectName("pb_to_p2")
-
-        self.pb_to_p3 = QtWidgets.QPushButton(self)
-        self.pb_to_p3.setGeometry(QtCore.QRect(1400, 800, 480, 100))
-        font.setPointSize(16)
-        self.pb_to_p3.setFont(font)
-        self.pb_to_p3.setText("RFI聚类分析")
-        self.pb_to_p3.setObjectName("pb_to_p3")
 
         self.pb_to_p1.clicked.connect(lambda : self.pb_action(self.pb_to_p1))
         self.pb_to_p2.clicked.connect(lambda : self.pb_action(self.pb_to_p2))
-        self.pb_to_p3.clicked.connect(lambda : self.pb_action(self.pb_to_p3))
 
     def pb_action(self, pb):
         if pb.objectName() == "pb_to_p1":
             self.Stack.setCurrentIndex(1)
         elif pb.objectName() == "pb_to_p2":
             self.Stack.setCurrentIndex(2)
-        elif pb.objectName() == "pb_to_p3":
-            self.Stack.setCurrentIndex(3)
 

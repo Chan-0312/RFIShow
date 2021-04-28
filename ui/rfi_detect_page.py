@@ -342,7 +342,7 @@ class RfiDetectPage(QtWidgets.QWidget):
         font.setFamily("Arial")
 
         self.lb_title = QtWidgets.QLabel(self)
-        self.lb_title.setText("RFI检测")
+        self.lb_title.setText("RFI检测分析")
         self.lb_title.setGeometry(QtCore.QRect(0, 0, 1920, 100))
         font.setPointSize(48)
         self.lb_title.setFont(font)
@@ -495,7 +495,7 @@ class RfiDetectPage(QtWidgets.QWidget):
             self.tableView.setVisible(False)
             self.pb_get_feature.setText("特征提取")
 
-        self.Stack.setCurrentIndex(4)
+        self.Stack.setCurrentIndex(3)
         QtWidgets.QApplication.processEvents()
 
         if args["rfishow_page"]["mask_kwargs"] == "None":
@@ -522,7 +522,7 @@ class RfiDetectPage(QtWidgets.QWidget):
     def _pb_get_feature_action(self):
         if self.pb_get_feature.text() == "特征提取":
             self.pb_get_feature.setText("结束分析")
-            self.Stack.setCurrentIndex(4)
+            self.Stack.setCurrentIndex(3)
             QtWidgets.QApplication.processEvents()
 
             if args["rfishow_page"]["mask_kwargs"] == "None":

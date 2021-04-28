@@ -7,7 +7,7 @@
 
 @Software:  RFIShow
 
-@File    :  rficluster_page.py
+@File    :  rfi_cluster_page.py
 
 @Time    :  2021.4.16
 
@@ -141,20 +141,19 @@ class RficlusterPage(QtWidgets.QWidget):
                 self.show_RFIfeatures(index_num)
 
     def show_RFIfeatures(self, show_num, edge_size=2):
-        self.Stack.setCurrentIndex(4)
-        QtWidgets.QApplication.processEvents()
         rfi_feature = self.rfi_feature_data.iloc[show_num].values
-        rfi_feature[0] = "F:/xscPycharm/RFIShow/data/FAST_data/"+rfi_feature[0].split("/")[-1]
-        if self.Rfi_F is not None and self.Rfi_F.fits_path == rfi_feature[0]:
+        rfi_feature[0] = rfi_feature[0].split('/')[-1]
+        rfi_feature = rfi_feature.tolist()
+        if self.Rfi_F is not None and self.Rfi_F.fast_data.FAST_NAME == rfi_feature[0]:
             pass
         else:
-            self.Rfi_F = RfiFeatures(rfi_feature[0], mask_mode="arpls_mask")
-
-        self.Rfi_F.part_rfi_show(rfi_feature, edge_size=edge_size, save_fig="./data/temp_data/rfi_feature_image.png")
-        img = Image.open("./data/temp_data/rfi_feature_image.png")
+            self.Rfi_F = RfiFeatures("F:/xscPycharm/RFIShow/data/FAST_data/"+rfi_feature[0], mask_mode="arpls_mask")
+        rfi_feature.insert(2, 1)
+        img = self.Rfi_F.feature_rfi_show(rfi_feature,
+                                    edge_size=edge_size,
+                                    recount_mask=False,
+                                    save_fig=None)
         pix = img.toqpixmap()
         self.image_2.setPixmap(pix)
 
         self.lb_cluster_num.setText(str(self.cluster_labels[show_num]))
-        self.Stack.setCurrentIndex(3)
-        QtWidgets.QApplication.processEvents()
