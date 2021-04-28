@@ -39,6 +39,7 @@ def _get_settings(setting_name):
             "npol_num": cf.getint("rfishow_page", "npol_num"),
             "show_mask": cf.getint("rfishow_page", "show_mask"),
             "edge_size": cf.getint("rfishow_page", "edge_size"),
+            "connectivity": cf.getint("rfishow_page", "connectivity"),
         }
     return args
 

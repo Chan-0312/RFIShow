@@ -108,6 +108,7 @@ class RfiFeatures:
         self.mask = None
         self.line_mask = None
         self.blob_mask = None
+        self.rfi_features = None
 
     def get_mask(self, block_num, npol_num):
         """
@@ -251,10 +252,12 @@ class RfiFeatures:
 
         return blob_features
 
-    def get_rfi_features(self, npol_num):
+    def get_rfi_features(self, npol_num, block_num_list=None, connectivity=1):
         """
         获取整个fits文件的全部RFI特征list
         :param npol_num: 极化通道
+        :param block_num_list: 需要提取特征的block_num编号列表
+        :param connectivity: 连通方式: 1--4连通算法，2--8连通算法
         :return:
          包含：
             fits_name: fits文件名(None)
@@ -280,12 +283,14 @@ class RfiFeatures:
         """
 
         rfi_features = []
-        for block_num in range(self.fast_data.NAXIS2):
-        # for block_num in range(3):
+        if block_num_list is None:
+            block_num_list = np.arange(self.fast_data.NAXIS2)
+
+        for block_num in block_num_list:
             data, mask, line_mask, blob_mask = self.get_mask(block_num, npol_num)
 
             line_feature = self.get_line_feature(data, line_mask)
-            blob_feature = self.get_blob_feature(data, blob_mask)
+            blob_feature = self.get_blob_feature(data, blob_mask, connectivity)
 
             # 合并噪声特征
             feature = np.array(line_feature + blob_feature)
@@ -296,7 +301,11 @@ class RfiFeatures:
             rfi_features += feature.tolist()
             print(self.fast_data.FAST_NAME, "| nplo_num = %d"%self.npol_num, "| block_num = %d"%self.block_num, "ok!")
 
-        return rfi_features
+        from random import shuffle
+        # 打乱顺序
+        shuffle(rfi_features)
+        self.rfi_features = rfi_features
+        return self.rfi_features
 
     def rfi_show(self, block_num, npol_num, show_mask=0, save_fig=None):
         """
@@ -435,12 +444,13 @@ class RfiFeatures:
         return fig2data(fig)
 
 
-    def feature_rfi_show(self, rfi_feature, edge_size=2, save_fig=None):
+    def feature_rfi_show(self, rfi_feature, edge_size=2, recount_mask=True, save_fig=None):
         """
         显示单个RFI特征的局部图像
 
         :param rfi_feature: 需要显示的rfi特征
         :param edge_size: 局部显示边框
+        :param recount_mask: 是否重新计算mask，False可以减少计算量只显示局部框，True还显示RFI mask
         :param save_fig: 保存图像路径，None不保存
         :return: PIL图像格式
         """
@@ -463,13 +473,6 @@ class RfiFeatures:
         bandwidth = rfi_feature[10]
         data_mean = rfi_feature[-2]
         data_var = rfi_feature[-1]
-
-        # 避免重复处理数据
-        if self.fast_data.FAST_NAME == fitsname and self.block_num == block_num and self.npol_num == npol_num:
-            data = self.data
-            mask = self.mask
-        else:
-            data, mask, _, _ = self.get_mask(block_num, npol_num)
 
         # 判断边界
         if x_index - edge_left < 0:
@@ -494,11 +497,24 @@ class RfiFeatures:
         else:
             show_h = edge_up + bandwidth_unit + edge_down
 
-        showdata = data[show_y:show_y + show_h, show_x:show_x + show_w]
-        showmask = mask[show_y:show_y + show_h, show_x:show_x + show_w]
-
         fig = plt.figure(figsize=(10, 8), dpi=128)
-        plt.imshow(np.ma.array(showdata, mask=showmask), aspect='auto', cmap='jet')
+        if recount_mask == True:
+
+            # 避免重复处理数据
+            if self.block_num == block_num and self.npol_num == npol_num:
+                data = self.data
+                mask = self.mask
+            else:
+                data, mask, _, _ = self.get_mask(block_num, npol_num)
+
+            showdata = data[show_y:show_y + show_h, show_x:show_x + show_w]
+            showmask = mask[show_y:show_y + show_h, show_x:show_x + show_w]
+            plt.imshow(np.ma.array(showdata, mask=showmask), aspect='auto', cmap='jet')
+        else:
+            data = self.fast_data.get_data(block_num, npol_num)
+            showdata = data[show_y:show_y + show_h, show_x:show_x + show_w]
+            plt.imshow(showdata, aspect='auto', cmap='jet')
+
         # 在局部图像画出矩形框
         ax = plt.gca()
         rect = patches.Rectangle((edge_left - 0.5, edge_down - 0.5), duration_unit, bandwidth_unit,
@@ -506,7 +522,7 @@ class RfiFeatures:
         ax.add_patch(rect)
 
         # 每个像素填入强度
-        if show_w <= 16 and show_h <= 32:
+        if show_w <= 32:
             for px_x in range(showdata.shape[1]):
                 for px_y in range(showdata.shape[0]):
                     plt.text(px_x, px_y, str(showdata[px_y, px_x]), verticalalignment='center',
@@ -582,13 +598,14 @@ def get_rfi_mask(fits_dir, npol_num=1, mask_mode="arpls_mask", **kwargs):
 
 
 
-def get_rfi_features(fits_dir, npol_num=1, mask_mode="arpls_mask", save_csv_name="./rfi_feature_data.csv",  **kwargs):
+def get_rfi_features(fits_dir, npol_num=1, connectivity=1, mask_mode="arpls_mask", save_csv_name="./rfi_feature_data.csv",  **kwargs):
     """
     获取整个路径下所有fits文件的RFI特征
 
     :param fits_dir: FAST数据路径
     :param npol_num: 极化通道
     :param mask_mode: RFI mask算法模型
+    :param connectivity: 连通方式: 1--4连通算法，2--8连通算法
     :param **kwargs: mask算法的对应参数
     :param save_csv_name: csv文件保存路径
     :return: 返回一个DataFrame, 包含特征：
@@ -627,7 +644,7 @@ def get_rfi_features(fits_dir, npol_num=1, mask_mode="arpls_mask", save_csv_name
 
     for fits_name in tqdm(fits_list):
         rfi_f = RfiFeatures(fits_dir + fits_name, mask_mode, **kwargs)
-        rfi_features = np.array(rfi_f.get_rfi_features(npol_num=npol_num))
+        rfi_features = np.array(rfi_f.get_rfi_features(npol_num=npol_num, connectivity=connectivity))
         rfi_feature_df = rfi_feature_df.append(pd.DataFrame(data=rfi_features, columns=cols_name),
                                                ignore_index=True)
 

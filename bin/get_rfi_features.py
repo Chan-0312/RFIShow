@@ -38,4 +38,10 @@ if __name__ == '__main__':
     else:
         mask_kwargs = dict(s.split("=") for s in args["rfishow_page"]["mask_kwargs"].split("|"))
 
-    get_rfi_features(fits_dir, npol_num=args["rfishow_page"]["npol_num"], mask_mode=args["rfishow_page"]["mask_mode"], save_csv_name=csv_name, **mask_kwargs)
+    get_rfi_features(fits_dir,
+                     npol_num=args["rfishow_page"]["npol_num"],
+                     connectivity=args["rfishow_page"]["connectivity"],
+                     mask_mode=args["rfishow_page"]["mask_mode"],
+                     save_csv_name=csv_name,
+                     **mask_kwargs)
+
