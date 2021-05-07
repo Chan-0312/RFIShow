@@ -21,6 +21,8 @@ from PyQt5 import QtGui, QtCore, QtWidgets
 from conf import args, save_sttings
 from core.rfi_features import RfiFeatures
 
+# 特征提取的表格显示数据上限
+TABLEVIEW_SIZE = 300
 
 class SettingsPage(QtWidgets.QWidget):
     """
@@ -263,22 +265,22 @@ class SettingsPage(QtWidgets.QWidget):
         self.retranslateUi()
 
     def retranslateUi(self):
-        rfishow_page_args = args["rfishow_page"]
-        self.le_select_fits.setText(rfishow_page_args["fits_path"])
-        self.le_mask_mode.setText(rfishow_page_args["mask_mode"])
-        self.le_mask_kwargs.setText(rfishow_page_args["mask_kwargs"])
-        self.sb_block_num.setValue(rfishow_page_args["block_num"])
-        self.sb_npol_num.setValue(rfishow_page_args["npol_num"])
-        self.sb_edge_size.setValue(rfishow_page_args["edge_size"])
-        self.cbb_connectivity.setCurrentIndex(rfishow_page_args["connectivity"]-1)
+        rfi_detect_page_args = args["rfi_detect_page"]
+        self.le_select_fits.setText(rfi_detect_page_args["fits_path"])
+        self.le_mask_mode.setText(rfi_detect_page_args["mask_mode"])
+        self.le_mask_kwargs.setText(rfi_detect_page_args["mask_kwargs"])
+        self.sb_block_num.setValue(rfi_detect_page_args["block_num"])
+        self.sb_npol_num.setValue(rfi_detect_page_args["npol_num"])
+        self.sb_edge_size.setValue(rfi_detect_page_args["edge_size"])
+        self.cbb_connectivity.setCurrentIndex(rfi_detect_page_args["connectivity"]-1)
 
-        if rfishow_page_args["show_mask"] == 1:
+        if rfi_detect_page_args["show_mask"] == 1:
             self.chb_show_line_mask.setChecked(True)
             self.chb_show_blob_mask.setChecked(True)
-        elif rfishow_page_args["show_mask"] == 2:
+        elif rfi_detect_page_args["show_mask"] == 2:
             self.chb_show_line_mask.setChecked(True)
             self.chb_show_blob_mask.setChecked(False)
-        elif rfishow_page_args["show_mask"] == 3:
+        elif rfi_detect_page_args["show_mask"] == 3:
             self.chb_show_line_mask.setChecked(False)
             self.chb_show_blob_mask.setChecked(True)
         else:
@@ -288,18 +290,19 @@ class SettingsPage(QtWidgets.QWidget):
     def _pb_select_fits_action(self):
         absolute_path = QtWidgets.QFileDialog.getOpenFileName(self, '请选择fits文件',
                                                     '.', "fits files (*.fits)")
-        self.le_select_fits.setText(absolute_path[0])
+        if absolute_path[0] != "":
+            self.le_select_fits.setText(absolute_path[0])
 
     def _pb_confirm_action(self):
         if self.le_select_fits.text() == "":
             return
-        args["rfishow_page"]["fits_path"] = self.le_select_fits.text()
-        args["rfishow_page"]["mask_mode"] = self.le_mask_mode.text()
-        args["rfishow_page"]["mask_kwargs"] = self.le_mask_kwargs.text()
-        args["rfishow_page"]["block_num"] = self.sb_block_num.value()
-        args["rfishow_page"]["npol_num"] = self.sb_npol_num.value()
-        args["rfishow_page"]["edge_size"] = self.sb_edge_size.value()
-        args["rfishow_page"]["connectivity"] = self.cbb_connectivity.currentIndex()+1
+        args["rfi_detect_page"]["fits_path"] = self.le_select_fits.text()
+        args["rfi_detect_page"]["mask_mode"] = self.le_mask_mode.text()
+        args["rfi_detect_page"]["mask_kwargs"] = self.le_mask_kwargs.text()
+        args["rfi_detect_page"]["block_num"] = self.sb_block_num.value()
+        args["rfi_detect_page"]["npol_num"] = self.sb_npol_num.value()
+        args["rfi_detect_page"]["edge_size"] = self.sb_edge_size.value()
+        args["rfi_detect_page"]["connectivity"] = self.cbb_connectivity.currentIndex()+1
 
 
         if self.chb_show_line_mask.isChecked() and self.chb_show_blob_mask.isChecked():
@@ -310,11 +313,11 @@ class SettingsPage(QtWidgets.QWidget):
             show_mask = 3
         else:
             show_mask = 0
-        args["rfishow_page"]["show_mask"] = show_mask
+        args["rfi_detect_page"]["show_mask"] = show_mask
 
         # 保存环境参数
         save_sttings(args, args["save_dict_list"])
-        # print(args["rfishow_page"])
+        # print(args["rfi_detect_page"])
         # 关闭界面
         self.close()
 
@@ -397,14 +400,18 @@ class RfiDetectPage(QtWidgets.QWidget):
         self.tableView = QtWidgets.QTableView(self)
         self.tableView.setGeometry(QtCore.QRect(20, 120, 1100, 880))
         # 设置数据层次结构，4行4列
-        self.model = QtGui.QStandardItemModel(500, 6)
+        self.model = QtGui.QStandardItemModel(TABLEVIEW_SIZE, 7)
         # 设置水平方向四个头标签文本内容
-        self.model.setHorizontalHeaderLabels(['noise_type','y','bandwidth','duration','data_mean','data_var'])
+        self.model.setHorizontalHeaderLabels(['编号','噪声类型','起始频率','噪声带宽','持续时间','强度均值','强度方差'])
         # 自动调整大小尺寸
         self.tableView.horizontalHeader().setSectionResizeMode(QtWidgets.QHeaderView.Stretch)
         self.tableView.verticalHeader().setSectionResizeMode(QtWidgets.QHeaderView.Stretch)
         # 不允许编辑
         self.tableView.setEditTriggers(QtWidgets.QAbstractItemView.NoEditTriggers)
+        # 隐藏序号
+        self.tableView.verticalHeader().hide()
+        # 表头排序
+        self.tableView.setSortingEnabled(True)
         # 设置数据
         self.tableView.setModel(self.model)
         # 不显示
@@ -426,14 +433,14 @@ class RfiDetectPage(QtWidgets.QWidget):
         """
         self.page_state = 0
 
-        if args["rfishow_page"]["mask_kwargs"] == "None":
+        if args["rfi_detect_page"]["mask_kwargs"] == "None":
             mask_kwargs = {}
         else:
-            mask_kwargs = dict(s.split("=") for s in args["rfishow_page"]["mask_kwargs"].split("|"))
+            mask_kwargs = dict(s.split("=") for s in args["rfi_detect_page"]["mask_kwargs"].split("|"))
 
-        if args["rfishow_page"]["fits_path"] != "":
-            self.rfi_f = RfiFeatures(args["rfishow_page"]["fits_path"],
-                                     args["rfishow_page"]["mask_mode"],
+        if args["rfi_detect_page"]["fits_path"] != "":
+            self.rfi_f = RfiFeatures(args["rfi_detect_page"]["fits_path"],
+                                     args["rfi_detect_page"]["mask_mode"],
                                      **mask_kwargs)
         else:
             self.rfi_f = None
@@ -452,10 +459,10 @@ class RfiDetectPage(QtWidgets.QWidget):
             if x < 0 or x > 1023 or y < 0 or y > 4095:
                 return
 
-            img = self.rfi_f.part_rfi_show(block_num=args["rfishow_page"]["block_num"],
-                                           npol_num=args["rfishow_page"]["npol_num"],
+            img = self.rfi_f.part_rfi_show(block_num=args["rfi_detect_page"]["block_num"],
+                                           npol_num=args["rfi_detect_page"]["npol_num"],
                                            box_center=[x, y],
-                                           edge_size=args["rfishow_page"]["edge_size"],
+                                           edge_size=args["rfi_detect_page"]["edge_size"],
                                            save_fig=None)
             pix = img.toqpixmap()
             self.image_2.setPixmap(pix)
@@ -477,7 +484,7 @@ class RfiDetectPage(QtWidgets.QWidget):
         if self.page_state == 0:
             QtWidgets.QMessageBox.information(self, "错误", "请先运行模型!")
         else:
-            absolute_path = absolute_path + "/" + args["rfishow_page"]["fits_path"].split("/")[-1] + "_%d_%d"%(args["rfishow_page"]["block_num"], args["rfishow_page"]["npol_num"])
+            absolute_path = absolute_path + "/" + args["rfi_detect_page"]["fits_path"].split("/")[-1] + "_%d_%d"%(args["rfi_detect_page"]["block_num"], args["rfi_detect_page"]["npol_num"])
             if self.image_1.pixmap() is not None:
                 image_1 = self.image_1.pixmap().toImage()
                 image_1.save(absolute_path + "_image1.png")
@@ -498,20 +505,20 @@ class RfiDetectPage(QtWidgets.QWidget):
         self.Stack.setCurrentIndex(3)
         QtWidgets.QApplication.processEvents()
 
-        if args["rfishow_page"]["mask_kwargs"] == "None":
+        if args["rfi_detect_page"]["mask_kwargs"] == "None":
             mask_kwargs = {}
         else:
-            mask_kwargs = dict(s.split("=") for s in args["rfishow_page"]["mask_kwargs"].split("|"))
+            mask_kwargs = dict(s.split("=") for s in args["rfi_detect_page"]["mask_kwargs"].split("|"))
 
 
-        if self.rfi_f is None or self.rfi_f.fast_data.FAST_NAME != args["rfishow_page"]["fits_path"] or self.rfi_f.mask_mode_name != args["rfishow_page"]["mask_mode"] or self.rfi_f.mask_kwargs != mask_kwargs:
-            self.rfi_f = RfiFeatures(args["rfishow_page"]["fits_path"],
-                                     args["rfishow_page"]["mask_mode"],
+        if self.rfi_f is None or self.rfi_f.fast_data.FAST_NAME != args["rfi_detect_page"]["fits_path"] or self.rfi_f.mask_mode_name != args["rfi_detect_page"]["mask_mode"] or self.rfi_f.mask_kwargs != mask_kwargs:
+            self.rfi_f = RfiFeatures(args["rfi_detect_page"]["fits_path"],
+                                     args["rfi_detect_page"]["mask_mode"],
                                      **mask_kwargs)
 
-        img = self.rfi_f.rfi_show(block_num=args["rfishow_page"]["block_num"],
-                                  npol_num=args["rfishow_page"]["npol_num"],
-                                  show_mask=args["rfishow_page"]["show_mask"],
+        img = self.rfi_f.rfi_show(block_num=args["rfi_detect_page"]["block_num"],
+                                  npol_num=args["rfi_detect_page"]["npol_num"],
+                                  show_mask=args["rfi_detect_page"]["show_mask"],
                                   save_fig=None)
         pix = img.toqpixmap()
         self.image_1.setPixmap(pix)
@@ -521,30 +528,35 @@ class RfiDetectPage(QtWidgets.QWidget):
 
     def _pb_get_feature_action(self):
         if self.pb_get_feature.text() == "特征提取":
+            # 清空数据
+            self.model.clear()
+            self.model.setHorizontalHeaderLabels(['编号', '噪声类型', '起始频率', '噪声带宽', '持续时间', '强度均值', '强度方差'])
+
             self.pb_get_feature.setText("结束分析")
             self.Stack.setCurrentIndex(3)
             QtWidgets.QApplication.processEvents()
 
-            if args["rfishow_page"]["mask_kwargs"] == "None":
+            if args["rfi_detect_page"]["mask_kwargs"] == "None":
                 mask_kwargs = {}
             else:
-                mask_kwargs = dict(s.split("=") for s in args["rfishow_page"]["mask_kwargs"].split("|"))
+                mask_kwargs = dict(s.split("=") for s in args["rfi_detect_page"]["mask_kwargs"].split("|"))
 
-            if self.rfi_f is None or self.rfi_f.fast_data.FAST_NAME != args["rfishow_page"][
-                "fits_path"] or self.rfi_f.mask_mode_name != args["rfishow_page"][
+            if self.rfi_f is None or self.rfi_f.fast_data.FAST_NAME != args["rfi_detect_page"][
+                "fits_path"] or self.rfi_f.mask_mode_name != args["rfi_detect_page"][
                 "mask_mode"] or self.rfi_f.mask_kwargs != mask_kwargs:
-                self.rfi_f = RfiFeatures(args["rfishow_page"]["fits_path"],
-                                         args["rfishow_page"]["mask_mode"],
+                self.rfi_f = RfiFeatures(args["rfi_detect_page"]["fits_path"],
+                                         args["rfi_detect_page"]["mask_mode"],
                                          **mask_kwargs)
 
-            rfi_features = self.rfi_f.get_rfi_features(npol_num=args["rfishow_page"]["npol_num"],
-                                                       connectivity=args["rfishow_page"]["connectivity"],
-                                                       block_num_list=[args["rfishow_page"]["block_num"]])
-            if len(rfi_features) < 500:
+            rfi_features = self.rfi_f.get_rfi_features(npol_num=args["rfi_detect_page"]["npol_num"],
+                                                       connectivity=args["rfi_detect_page"]["connectivity"],
+                                                       block_num_list=[args["rfi_detect_page"]["block_num"]])
+            if len(rfi_features) < TABLEVIEW_SIZE:
                 row_len = len(rfi_features)
             else:
-                row_len = 500
+                row_len = TABLEVIEW_SIZE
             for row in range(row_len):
+                self.model.setItem(row, 0, QtGui.QStandardItem(str(row).zfill(3)))
                 for column in range(6):
                     if column == 0:
                         data = str(rfi_features[row][3])
@@ -552,7 +564,7 @@ class RfiDetectPage(QtWidgets.QWidget):
                         data = "%.4f"%rfi_features[row][column-6]
                     item = QtGui.QStandardItem(data)
                     # 设置每个位置的文本值
-                    self.model.setItem(row, column, item)
+                    self.model.setItem(row, column+1, item)
 
             self.tableView.setVisible(True)
             self.page_state = 2
@@ -569,14 +581,21 @@ class RfiDetectPage(QtWidgets.QWidget):
 
 
     def _tableView_action(self, clickedIndex):
+        """
+        点击表格数据
+        :param clickedIndex:
+        :return:
+        """
         row = clickedIndex.row()
+        if row > len(self.rfi_f.rfi_features):
+            return
+
+        row = int(self.model.index(row, 0).data())
         img = self.rfi_f.feature_rfi_show(self.rfi_f.rfi_features[row],
                                           recount_mask=True,
-                                          edge_size=args["rfishow_page"]["edge_size"])
+                                          edge_size=args["rfi_detect_page"]["edge_size"])
         pix = img.toqpixmap()
         self.image_2.setPixmap(pix)
-
-
 
 
 

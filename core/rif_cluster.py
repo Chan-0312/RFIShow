@@ -70,10 +70,10 @@ class RfiCluster:
         self.X_reduce = MinMaxScaler().fit_transform(self.X_reduce)*2 - 1
         return self.X_reduce
 
-    def rfi_cluster(self, cluster_mode="AgglomerativeClustering", **kwargs):
+    def rfi_cluster(self, n_clusters=16, cluster_mode="AgglomerativeClustering", **kwargs):
         """
         对RFI特征进行聚类
-
+        :param n_clusters: 聚类类别数
         :param cluster_mode: 聚类方法，可选参数
             - 'AgglomerativeClustering': AgglomerativeClustering算法
             - 'KMeans': KMeans算法

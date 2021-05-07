@@ -27,11 +27,10 @@ if __name__ == '__main__':
     
     :param fits_dir: fits文件路径
     """
-    assert len(sys.argv) == 3, "Usage：python get_rfi_features.py fits_dir csv_name"
+    assert len(sys.argv) == 2, "Usage：python get_rfi_features.py fits_dir"
 
     # 读取参数
     fits_dir = sys.argv[1]
-    csv_name = sys.argv[2]
 
     if args["rfishow_page"]["mask_kwargs"] == "None":
         mask_kwargs = {}
@@ -42,6 +41,5 @@ if __name__ == '__main__':
                      npol_num=args["rfishow_page"]["npol_num"],
                      connectivity=args["rfishow_page"]["connectivity"],
                      mask_mode=args["rfishow_page"]["mask_mode"],
-                     save_csv_name=csv_name,
                      **mask_kwargs)
 

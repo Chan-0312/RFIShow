@@ -44,7 +44,7 @@ class FastData:
         self.NPOL = hdu[1].header['NPOL']           # 极化数(我们默认选择第二个)
         self.NCHAN = hdu[1].header['NCHAN']         # 一个数据块频率通道数(即矩阵高)
         self.TBIN = hdu[1].header['TBIN']           # 采样时间间隔
-        self.DAT_FREQ = hdu[1].data["DAT_FREQ"][0]  # 频率数据
+        self.DAT_FREQ = hdu[1].data["DAT_FREQ"][0][::-1]  # 频率数据
 
 
     def get_data(self, block_num, npol_num):
@@ -185,7 +185,7 @@ class RfiFeatures:
             else:
                 noise_type = 3  # 单整行噪声
 
-            bandwidth = self.fast_data.DAT_FREQ[line_group[-1]] - self.fast_data.DAT_FREQ[line_group[0]]
+            bandwidth = self.fast_data.DAT_FREQ[line_group[0]] - self.fast_data.DAT_FREQ[line_group[-1]]
             duration = duration_unit * self.fast_data.TBIN
 
             # 强度均值和方差
@@ -231,7 +231,7 @@ class RfiFeatures:
             bandwidth_unit = y_mask_index.max() - y_index
             duration_unit = x_mask_index.max() - x_index
 
-            bandwidth = self.fast_data.DAT_FREQ[y_mask_index.max()] - self.fast_data.DAT_FREQ[y_index]
+            bandwidth = self.fast_data.DAT_FREQ[y_index] - self.fast_data.DAT_FREQ[y_mask_index.max()]
             duration = duration_unit * self.fast_data.TBIN
 
             if duration_unit == 0 and bandwidth_unit == 0:
@@ -347,7 +347,7 @@ class RfiFeatures:
             ax[0].imshow(data, aspect='auto', cmap='jet')
 
         ax[0].set_yticks(np.arange(0, data.shape[0], data.shape[0] // 5))
-        ax[0].set_yticklabels(np.round(self.fast_data.DAT_FREQ[::-1][np.arange(0, data.shape[0], data.shape[0] // 5)], decimals=2))
+        ax[0].set_yticklabels(np.round(self.fast_data.DAT_FREQ[np.arange(0, data.shape[0], data.shape[0] // 5)], decimals=2))
         ax[0].set_xticks([])
 
         ax[0].set_title('RFI Data: %s\nblock=%d, npol=%d' %
@@ -360,7 +360,7 @@ class RfiFeatures:
         ax[1].set_xlim([0, self.fast_data.NSBLK])
         ax[1].set_yticks([])
 
-        ax[2].plot(data.sum(axis=1), self.fast_data.DAT_FREQ[::-1], 'k')
+        ax[2].plot(data.sum(axis=1), self.fast_data.DAT_FREQ, 'k')
         ax[2].set_ylim([self.fast_data.DAT_FREQ[0], self.fast_data.DAT_FREQ[-1]])
         ax[2].set_xlim([0, data.sum(axis=1).mean()*5])
         ax[2].set_xlabel('SED', fontsize=15)
@@ -428,10 +428,10 @@ class RfiFeatures:
         plt.xticks(size=15)
         if edge_size*2 > 5:
             plt.yticks(np.arange(0, edge_size*2, edge_size*2 // 5),
-                       np.around(self.fast_data.DAT_FREQ[::-1][y_index:y_index + edge_size*2:edge_size*2 // 5], 2), size=15)
+                       np.around(self.fast_data.DAT_FREQ[y_index:y_index + edge_size*2:edge_size*2 // 5], 2), size=15)
         else:
             plt.yticks(np.arange(0, edge_size*2),
-                       np.around(self.fast_data.DAT_FREQ[::-1][y_index:y_index + edge_size*2], 2), size=15)
+                       np.around(self.fast_data.DAT_FREQ[y_index:y_index + edge_size*2], 2), size=15)
 
         plt.title('Partial Data: %s\nblock=%d,npol=%d,box_center=[%d,%d],view_size=%d'%
                   (self.fast_data.FAST_NAME, block_num, npol_num, box_center[0], box_center[1], edge_size), size=15)
@@ -533,10 +533,10 @@ class RfiFeatures:
         plt.xticks(size=15)
         if show_h > 5:
             plt.yticks(np.arange(0, show_h, show_h // 5),
-                       np.around(self.fast_data.DAT_FREQ[::-1][show_y:show_y + show_h:show_h // 5], 2), size=15)
+                       np.around(self.fast_data.DAT_FREQ[show_y:show_y + show_h:show_h // 5], 2), size=15)
         else:
             plt.yticks(np.arange(0, show_h),
-                       np.around(self.fast_data.DAT_FREQ[::-1][show_y:show_y + show_h], 2), size=15)
+                       np.around(self.fast_data.DAT_FREQ[show_y:show_y + show_h], 2), size=15)
 
         plt.title('Partial Data: %s\nblock=%d,npol=%d,freq=%.2f,bandwidth=%.2f,d_mean=%.2f,d_var=%.2f' %
                   (fitsname, block_num, npol_num, y, bandwidth, data_mean, data_var), size=15)
@@ -573,7 +573,7 @@ class RfiFeatures:
 
 def get_rfi_mask(fits_dir, npol_num=1, mask_mode="arpls_mask", **kwargs):
     """
-    获取整个目录下所有fits文件的RFI mask数据并保存。
+    获取整个目录下所有fits文件的RFI mask数据并保存。(保存在fits_dir/output_data/下)
 
     :param fits_dir: fits文件路径
     :param npol_num: 极化通道
@@ -598,16 +598,15 @@ def get_rfi_mask(fits_dir, npol_num=1, mask_mode="arpls_mask", **kwargs):
 
 
 
-def get_rfi_features(fits_dir, npol_num=1, connectivity=1, mask_mode="arpls_mask", save_csv_name="./rfi_feature_data.csv",  **kwargs):
+def get_rfi_features(fits_dir, npol_num=1, connectivity=1, mask_mode="arpls_mask", **kwargs):
     """
-    获取整个路径下所有fits文件的RFI特征
+    获取整个路径下所有fits文件的RFI特征。(保存在fits_dir/output_data/下)
 
     :param fits_dir: FAST数据路径
     :param npol_num: 极化通道
     :param mask_mode: RFI mask算法模型
     :param connectivity: 连通方式: 1--4连通算法，2--8连通算法
     :param **kwargs: mask算法的对应参数
-    :param save_csv_name: csv文件保存路径
     :return: 返回一个DataFrame, 包含特征：
         fits_name: fits文件名(None)
         num_block: 数据块编号(None)
@@ -637,6 +636,9 @@ def get_rfi_features(fits_dir, npol_num=1, connectivity=1, mask_mode="arpls_mask
         if os.path.splitext(i)[1] == ".fits":
             fits_list.append(i)
 
+    if not os.path.exists(fits_dir+"output_data"):
+        os.makedirs(fits_dir+"output_data")
+
     cols_name = ["fits_name", "block_num", "npol_num", "noise_type", "x_index", "y_index", "bandwidth_unit", "duration_unit",
                  "x", "y", "bandwidth", "duration", "data_mean", "data_var"]
 
@@ -644,7 +646,9 @@ def get_rfi_features(fits_dir, npol_num=1, connectivity=1, mask_mode="arpls_mask
 
     for fits_name in tqdm(fits_list):
         rfi_f = RfiFeatures(fits_dir + fits_name, mask_mode, **kwargs)
-        rfi_features = np.array(rfi_f.get_rfi_features(npol_num=npol_num, connectivity=connectivity))
+        rfi_features = np.array(rfi_f.get_rfi_features(npol_num=npol_num,
+                                                       block_num_list=None,
+                                                       connectivity=connectivity))
         rfi_feature_df = rfi_feature_df.append(pd.DataFrame(data=rfi_features, columns=cols_name),
                                                ignore_index=True)
 
@@ -663,6 +667,6 @@ def get_rfi_features(fits_dir, npol_num=1, connectivity=1, mask_mode="arpls_mask
     rfi_feature_df.data_mean = rfi_feature_df.data_mean.astype(np.float32)
     rfi_feature_df.data_var = rfi_feature_df.data_var.astype(np.float32)
 
-    rfi_feature_df.to_csv(save_csv_name, index=False)
+    rfi_feature_df.to_csv(fits_dir + 'output_data/rfi_feature_data.csv', index=False)
 
     return rfi_feature_df

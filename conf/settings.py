@@ -30,17 +30,25 @@ def _get_settings(setting_name):
 
     cf = ConfigParser()
     cf.read(project_path+"/conf/rfishow.cfg", encoding="utf-8")
-    if setting_name == "rfishow_page":
+    if setting_name == "rfi_detect_page":
         args = {
-            "fits_path": cf.get("rfishow_page", "fits_path"),
-            "mask_mode": cf.get("rfishow_page", "mask_mode"),
-            "mask_kwargs": cf.get("rfishow_page", "mask_kwargs"),
-            "block_num": cf.getint("rfishow_page", "block_num"),
-            "npol_num": cf.getint("rfishow_page", "npol_num"),
-            "show_mask": cf.getint("rfishow_page", "show_mask"),
-            "edge_size": cf.getint("rfishow_page", "edge_size"),
-            "connectivity": cf.getint("rfishow_page", "connectivity"),
+            "fits_path": cf.get(setting_name, "fits_path"),
+            "mask_mode": cf.get(setting_name, "mask_mode"),
+            "mask_kwargs": cf.get(setting_name, "mask_kwargs"),
+            "block_num": cf.getint(setting_name, "block_num"),
+            "npol_num": cf.getint(setting_name, "npol_num"),
+            "show_mask": cf.getint(setting_name, "show_mask"),
+            "edge_size": cf.getint(setting_name, "edge_size"),
+            "connectivity": cf.getint(setting_name, "connectivity"),
         }
+    elif setting_name == "rfi_cluster_page":
+        args = {
+            "csv_path": cf.get(setting_name, "csv_path"),
+            "sample_num": cf.getint(setting_name, "sample_num"),
+            "tsne_perplexity": cf.getint(setting_name, "tsne_perplexity"),
+        }
+
+
     return args
 
 def save_sttings(args, save_dict_list):
@@ -68,7 +76,8 @@ args = {
     "conf_path": "/conf/rfishow.cfg",
     "FAST_path": "/data/FAST_data/",
     "temp_data": "/data/temp_data/",
-    "save_dict_list": ["rfishow_page"],
-    "rfishow_page": _get_settings("rfishow_page"),
+    "save_dict_list": ["rfi_detect_page", "rfi_cluster_page"],
+    "rfi_detect_page": _get_settings("rfi_detect_page"),
+    "rfi_cluster_page": _get_settings("rfi_cluster_page"),
 }
 
