@@ -133,3 +133,9 @@ $ python main.py
   3. RFI检测分析中加入动态显示局部RFI检测结果图像的功能。
   4. RFI检测分析中加入特征提取后部分表格数据的可视化，并具有动态显示所选定的局部数据图像。
   5. 优化RFI局部显示的代码，几乎不用等待。
+
+# 六、界面演示
+
+## 6.1 主界面
+
+![RFIShow/main_page.png at master · Chan-0312/RFIShow (github.com)](https://github.com/Chan-0312/RFIShow/blob/master/resource/image/main_page.png)
