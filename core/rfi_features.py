@@ -444,7 +444,7 @@ class RfiFeatures:
         return fig2data(fig)
 
 
-    def feature_rfi_show(self, rfi_feature, edge_size=2, recount_mask=True, save_fig=None):
+    def feature_rfi_show(self, rfi_feature, edge_size=2, recount_mask=True, label=None ,save_fig=None):
         """
         显示单个RFI特征的局部图像
 
@@ -452,6 +452,7 @@ class RfiFeatures:
         :param edge_size: 局部显示边框
         :param recount_mask: 是否重新计算mask，False可以减少计算量只显示局部框，True还显示RFI mask
         :param save_fig: 保存图像路径，None不保存
+        :param label: 聚类标签号
         :return: PIL图像格式
         """
         # 显示局部上限扩展尺寸
@@ -537,6 +538,9 @@ class RfiFeatures:
         else:
             plt.yticks(np.arange(0, show_h),
                        np.around(self.fast_data.DAT_FREQ[show_y:show_y + show_h], 2), size=15)
+
+        if label is not None:
+            plt.figtext(0, 0.97, "cluster_label=%d"%label, size=20)
 
         plt.title('Partial Data: %s\nblock=%d,npol=%d,freq=%.2f,bandwidth=%.2f,d_mean=%.2f,d_var=%.2f' %
                   (fitsname, block_num, npol_num, y, bandwidth, data_mean, data_var), size=15)

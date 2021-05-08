@@ -16,10 +16,13 @@
 """
 
 from PIL import Image
+import os
 import pickle
+import numpy as np
 from PyQt5 import QtGui, QtCore, QtWidgets
 from conf import args, save_sttings
 from core.rfi_features import RfiFeatures
+from core.rfi_cluster import RfiCluster
 
 
 class SettingsPage(QtWidgets.QWidget):
@@ -191,6 +194,18 @@ class SettingsPage(QtWidgets.QWidget):
         self.cbb_cluster_mode.addItem("KMeans")
         self.cbb_cluster_mode.addItem("GaussianMixture")
 
+        self.label_6 = QtWidgets.QLabel(self)
+        self.label_6.setGeometry(QtCore.QRect(20, 280+30, 130, 40))
+        self.label_6.setFont(font)
+        self.label_6.setAlignment(QtCore.Qt.AlignCenter)
+        self.label_6.setObjectName("label_6")
+        self.label_6.setText("聚类参数")
+        self.le_cluster_kwargs = QtWidgets.QLineEdit(self)
+        self.le_cluster_kwargs.setEnabled(True)
+        self.le_cluster_kwargs.setGeometry(QtCore.QRect(160, 280+30, 620, 40))
+        self.le_cluster_kwargs.setFont(font)
+        self.le_cluster_kwargs.setObjectName("le_cluster_kwargs")
+
 
 
 
@@ -199,14 +214,14 @@ class SettingsPage(QtWidgets.QWidget):
         self.label_10.setGeometry(QtCore.QRect(20, 340 + 30, 120, 20))
         self.label_10.setFont(font)
         self.label_10.setObjectName("label_10")
-        self.label_10.setText("特征提取设置")
+        self.label_10.setText("显示设置")
         self.line_13 = QtWidgets.QFrame(self)
         self.line_13.setGeometry(QtCore.QRect(0, 350 + 30, 20, 61))
         self.line_13.setFrameShape(QtWidgets.QFrame.VLine)
         self.line_13.setFrameShadow(QtWidgets.QFrame.Sunken)
         self.line_13.setObjectName("line_13")
         self.line_14 = QtWidgets.QFrame(self)
-        self.line_14.setGeometry(QtCore.QRect(90 + 40, 340 + 30, 701 - 40, 20))
+        self.line_14.setGeometry(QtCore.QRect(90, 340 + 30, 701, 20))
         self.line_14.setFrameShape(QtWidgets.QFrame.HLine)
         self.line_14.setFrameShadow(QtWidgets.QFrame.Sunken)
         self.line_14.setObjectName("line_14")
@@ -220,8 +235,21 @@ class SettingsPage(QtWidgets.QWidget):
         self.line_16.setFrameShape(QtWidgets.QFrame.HLine)
         self.line_16.setFrameShadow(QtWidgets.QFrame.Sunken)
         self.line_16.setObjectName("line_16")
-
-
+        self.label_11 = QtWidgets.QLabel(self)
+        self.label_11.setGeometry(QtCore.QRect(20, 390, 130, 40))
+        self.label_11.setFont(font)
+        self.label_11.setAlignment(QtCore.Qt.AlignCenter)
+        self.label_11.setText("局部视野")
+        self.label_11.setObjectName("label_11")
+        self.sb_edge_size = QtWidgets.QSpinBox(self)
+        self.sb_edge_size.setGeometry(QtCore.QRect(160, 390, 260, 40))
+        self.sb_edge_size.setFont(font)
+        self.sb_edge_size.setAlignment(QtCore.Qt.AlignCenter)
+        self.sb_edge_size.setAccelerated(True)
+        self.sb_edge_size.setMaximum(16)
+        self.sb_edge_size.setMinimum(2)
+        self.sb_edge_size.setSingleStep(2)
+        self.sb_edge_size.setObjectName("sb_edge_size")
 
 
 
@@ -242,7 +270,10 @@ class SettingsPage(QtWidgets.QWidget):
         self.le_select_csv.setText(rfi_cluster_page_args["csv_path"])
         self.sb_sample_num.setValue(rfi_cluster_page_args["sample_num"])
         self.sb_tsne_perplexity.setValue(rfi_cluster_page_args["tsne_perplexity"])
-
+        self.cbb_cluster_mode.setCurrentIndex(rfi_cluster_page_args["cluster_mode"]-1)
+        self.sb_n_clusters.setValue(rfi_cluster_page_args["n_clusters"])
+        self.le_cluster_kwargs.setText(rfi_cluster_page_args["cluster_kwargs"])
+        self.sb_edge_size.setValue(rfi_cluster_page_args["edge_size"])
 
     def _pb_select_csv_action(self):
         absolute_path = QtWidgets.QFileDialog.getOpenFileName(self, '请选择rfi特征文件',
@@ -256,6 +287,10 @@ class SettingsPage(QtWidgets.QWidget):
         args["rfi_cluster_page"]["csv_path"] = self.le_select_csv.text()
         args["rfi_cluster_page"]["sample_num"] = self.sb_sample_num.value()
         args["rfi_cluster_page"]["tsne_perplexity"] = self.sb_tsne_perplexity.value()
+        args["rfi_cluster_page"]["cluster_mode"] = self.cbb_cluster_mode.currentIndex()+1
+        args["rfi_cluster_page"]["n_clusters"] = self.sb_n_clusters.value()
+        args["rfi_cluster_page"]["cluster_kwargs"] = self.le_cluster_kwargs.text()
+        args["rfi_cluster_page"]["edge_size"] = self.sb_edge_size.value()
 
         # 保存环境参数
         save_sttings(args, args["save_dict_list"])
@@ -340,10 +375,8 @@ class RfiClusterPage(QtWidgets.QWidget):
         # 信号连接
         self.pb_return.clicked.connect(self._pb_return_action)
         self.pb_set.clicked.connect(self._pb_set_action)
-
-        # img = Image.open(args["project_path"]+args["temp_data"]+"cluster_image.png")
-        # pix = img.toqpixmap()
-        # self.image_1.setPixmap(pix)
+        self.pb_rfi_reduction.clicked.connect(self._pb_rfi_reduction_action)
+        self.pb_rfi_cluster.clicked.connect(self._pb_rfi_cluster_action)
 
         # 页面状态
         """
@@ -353,10 +386,112 @@ class RfiClusterPage(QtWidgets.QWidget):
         """
         self.page_state = 0
 
+        if os.path.exists(args["project_path"]+args["temp_data"]+"rfi_c_class.pkl"):
+            self.rfi_c = pickle.load(open(args["project_path"]+args["temp_data"]+"rfi_c_class.pkl", 'rb'))
+            if self.rfi_c.y_est is not None:
+                self.page_state = 2
+            else:
+                self.page_state = 1
+
+            img = self.rfi_c.cluster_show()
+            pix = img.toqpixmap()
+            self.image_1.setPixmap(pix)
+        else:
+            self.rfi_c = None
+
+    def mousePressEvent(self, event):
+        """
+        鼠标按下事件
+        :param event:
+        :return:
+        """
+        if (self.page_state == 1 or self.page_state == 2) and event.button() == 1:
+            xy = event.pos() - QtCore.QPoint(42, 163)  # 返回鼠标坐标 (42,163), (1062,816)
+            x = 2.2*(xy.x() / 1062) - 1.1
+            y = 2.2*(xy.y() / 816) - 1.1
+            y = -y
+
+            if x < -1.1 or x > 1.1 or y < -1.1 or y > 1.1:
+                return
+
+            distance = (self.rfi_c.X_reduce[:, 0] - x) ** 2 + (self.rfi_c.X_reduce[:, 1] - y) ** 2
+            if distance.min() < 0.0005:
+                index_num = np.where(distance == distance.min())[0][0]
+                feature = self.rfi_c.rfi_features.iloc[index_num].values
+                rfi_f = RfiFeatures(args["project_path"]+args["FAST_path"]+feature[0])
+                img = rfi_f.feature_rfi_show(rfi_feature=feature,
+                                             edge_size=args["rfi_cluster_page"]["edge_size"],
+                                             label=self.rfi_c.y_est[index_num],
+                                             recount_mask=False)
+                pix = img.toqpixmap()
+                self.image_2.setPixmap(pix)
+
     def _pb_return_action(self):
         self.Stack.setCurrentIndex(0)
 
     def _pb_set_action(self):
         self.setting_page = SettingsPage()
         self.setting_page.show()
+
+    def _pb_rfi_reduction_action(self):
+        self.Stack.setCurrentIndex(3)
+        QtWidgets.QApplication.processEvents()
+
+        if self.rfi_c is None or self.rfi_c.csv_path != args["rfi_cluster_page"]["csv_path"] or self.rfi_c.sample_num != args["rfi_cluster_page"]["sample_num"]:
+            self.rfi_c = RfiCluster(csv_path=args["rfi_cluster_page"]["csv_path"],
+                                    sample_num=args["rfi_cluster_page"]["sample_num"])
+            self.rfi_c.dim_reduction(perplexity=args["rfi_cluster_page"]["tsne_perplexity"])
+
+        if self.rfi_c.tsne_perplexity != args["rfi_cluster_page"]["tsne_perplexity"]:
+            self.rfi_c.dim_reduction(perplexity=args["rfi_cluster_page"]["tsne_perplexity"])
+
+        img = self.rfi_c.cluster_show(show_est_label=False)
+        pix = img.toqpixmap()
+        self.image_1.setPixmap(pix)
+
+        pickle.dump(self.rfi_c, open(args["project_path"]+args["temp_data"]+'rfi_c_class.pkl', 'wb'))
+
+        self.Stack.setCurrentIndex(2)
+        QtWidgets.QApplication.processEvents()
+        pass
+
+    def _pb_rfi_cluster_action(self):
+
+        self.Stack.setCurrentIndex(3)
+        QtWidgets.QApplication.processEvents()
+
+        if self.rfi_c is None or self.rfi_c.csv_path != args["rfi_cluster_page"]["csv_path"] or self.rfi_c.sample_num != \
+                args["rfi_cluster_page"]["sample_num"]:
+            self.rfi_c = RfiCluster(csv_path=args["rfi_cluster_page"]["csv_path"],
+                                    sample_num=args["rfi_cluster_page"]["sample_num"])
+
+            self.rfi_c.dim_reduction(perplexity=args["rfi_cluster_page"]["tsne_perplexity"])
+
+        if args["rfi_cluster_page"]["cluster_mode"] == 1:
+            cluster_mode = "AgglomerativeClustering"
+        elif args["rfi_cluster_page"]["cluster_mode"] == 2:
+            cluster_mode = "KMeans"
+        elif args["rfi_cluster_page"]["cluster_mode"] == 3:
+            cluster_mode = "GaussianMixture"
+
+        if args["rfi_cluster_page"]["cluster_kwargs"] == "None":
+            cluster_kwargs = {}
+        else:
+            cluster_kwargs = dict(s.split("=") for s in args["rfi_detect_page"]["cluster_kwargs"].split("|"))
+
+        self.rfi_c.rfi_cluster(n_clusters=args["rfi_cluster_page"]["n_clusters"],
+                               cluster_mode=cluster_mode,
+                               **cluster_kwargs)
+
+        img = self.rfi_c.cluster_show(show_est_label=True)
+        pix = img.toqpixmap()
+        self.image_1.setPixmap(pix)
+
+        pickle.dump(self.rfi_c, open(args["project_path"] + args["temp_data"] + 'rfi_c_class.pkl', 'wb'))
+
+        self.Stack.setCurrentIndex(2)
+        QtWidgets.QApplication.processEvents()
+
+
+
 

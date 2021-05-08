@@ -16,7 +16,7 @@
 """
 
 
-from core.rif_cluster import RfiCluster
+from core.rfi_cluster import RfiCluster
 import pickle
 
 rfi_c = RfiCluster(csv_path="./rfi_feature_data_ok.csv", sample=500)

@@ -46,6 +46,11 @@ def _get_settings(setting_name):
             "csv_path": cf.get(setting_name, "csv_path"),
             "sample_num": cf.getint(setting_name, "sample_num"),
             "tsne_perplexity": cf.getint(setting_name, "tsne_perplexity"),
+            "cluster_mode": cf.getint(setting_name, "cluster_mode"),
+            "n_clusters": cf.getint(setting_name, "n_clusters"),
+            "cluster_kwargs": cf.get(setting_name, "cluster_kwargs"),
+            "edge_size": cf.getint(setting_name, "edge_size"),
+            "show_mask": cf.getboolean(setting_name, "show_mask")
         }
 
 
@@ -70,7 +75,7 @@ def save_sttings(args, save_dict_list):
 整个系统需要的一些参数文件
 """
 args = {
-    "version": "v0.2",
+    "version": "v0.3",
     "author": "熊盛春",
     "project_path": project_path,
     "conf_path": "/conf/rfishow.cfg",
