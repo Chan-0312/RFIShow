@@ -139,3 +139,23 @@ $ python main.py
 ## 6.1 主界面
 
 ![RFIShow/main_page.png at master · Chan-0312/RFIShow (github.com)](https://github.com/Chan-0312/RFIShow/blob/master/resource/image/main_page.png)
+
+## 6.2 RFI检测分析界面
+
+![RFIShow/detect_page_1.png at master · Chan-0312/RFIShow (github.com)](https://github.com/Chan-0312/RFIShow/blob/master/resource/image/detect_page_1.png)
+
+![RFIShow/detect_page_2.png at master · Chan-0312/RFIShow (github.com)](https://github.com/Chan-0312/RFIShow/blob/master/resource/image/detect_page_2.png)
+
+![RFIShow/detect_page_3.png at master · Chan-0312/RFIShow (github.com)](https://github.com/Chan-0312/RFIShow/blob/master/resource/image/detect_page_3.png)
+
+![RFIShow/detect_page_4.png at master · Chan-0312/RFIShow (github.com)](https://github.com/Chan-0312/RFIShow/blob/master/resource/image/detect_page_4.png)
+
+## 6.3 RFI聚类分析界面
+
+![RFIShow/cluster_page_1.png at master · Chan-0312/RFIShow (github.com)](https://github.com/Chan-0312/RFIShow/blob/master/resource/image/cluster_page_1.png)
+
+![RFIShow/cluster_page_2.png at master · Chan-0312/RFIShow (github.com)](https://github.com/Chan-0312/RFIShow/blob/master/resource/image/cluster_page_2.png)
+
+![RFIShow/cluster_page_3.png at master · Chan-0312/RFIShow (github.com)](https://github.com/Chan-0312/RFIShow/blob/master/resource/image/cluster_page_3.png)
+
+![RFIShow/cluster_page_4.png at master · Chan-0312/RFIShow (github.com)](https://github.com/Chan-0312/RFIShow/blob/master/resource/image/cluster_page_4.png)
