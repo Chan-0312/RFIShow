@@ -87,14 +87,22 @@ class SettingsPage(QtWidgets.QWidget):
         self.pb_select_csv.setObjectName("pb_select_csv")
         self.pb_select_csv.setText("文件选择")
         self.sb_sample_num = QtWidgets.QSpinBox(self)
-        self.sb_sample_num.setGeometry(QtCore.QRect(160, 150 - 50, 620, 40))
+        self.sb_sample_num.setGeometry(QtCore.QRect(160, 150 - 50, 260, 40))
         self.sb_sample_num.setFont(font)
         self.sb_sample_num.setAlignment(QtCore.Qt.AlignCenter)
         self.sb_sample_num.setAccelerated(True)
-        self.sb_sample_num.setMaximum(10000)
+        self.sb_sample_num.setMaximum(50000)
         self.sb_sample_num.setMinimum(500)
         self.sb_sample_num.setSingleStep(500)
         self.sb_sample_num.setObjectName("sb_sample_num")
+
+        self.chb_cut_point_rfi = QtWidgets.QCheckBox(self)
+        self.chb_cut_point_rfi.setGeometry(QtCore.QRect(440, 150 - 50, 260, 40))
+        self.chb_cut_point_rfi.setFont(font)
+        self.chb_cut_point_rfi.setObjectName("chb_cut_point_rfi")
+        self.chb_cut_point_rfi.setText("是否剔除单点状RFI")
+
+
 
 
         self.line_5 = QtWidgets.QFrame(self)
@@ -183,7 +191,6 @@ class SettingsPage(QtWidgets.QWidget):
         self.sb_n_clusters.setAlignment(QtCore.Qt.AlignCenter)
         self.sb_n_clusters.setAccelerated(True)
         self.sb_n_clusters.setMaximum(20)
-        self.sb_n_clusters.setMinimum(2)
         self.sb_n_clusters.setSingleStep(2)
         self.sb_n_clusters.setObjectName("sb_n_clusters")
         self.cbb_cluster_mode = QtWidgets.QComboBox(self)
@@ -205,7 +212,6 @@ class SettingsPage(QtWidgets.QWidget):
         self.le_cluster_kwargs.setGeometry(QtCore.QRect(160, 280+30, 620, 40))
         self.le_cluster_kwargs.setFont(font)
         self.le_cluster_kwargs.setObjectName("le_cluster_kwargs")
-
 
 
 
@@ -269,6 +275,7 @@ class SettingsPage(QtWidgets.QWidget):
         rfi_cluster_page_args = args["rfi_cluster_page"]
         self.le_select_csv.setText(rfi_cluster_page_args["csv_path"])
         self.sb_sample_num.setValue(rfi_cluster_page_args["sample_num"])
+        self.chb_cut_point_rfi.setChecked(rfi_cluster_page_args["cut_point_rfi"])
         self.sb_tsne_perplexity.setValue(rfi_cluster_page_args["tsne_perplexity"])
         self.cbb_cluster_mode.setCurrentIndex(rfi_cluster_page_args["cluster_mode"]-1)
         self.sb_n_clusters.setValue(rfi_cluster_page_args["n_clusters"])
@@ -286,6 +293,7 @@ class SettingsPage(QtWidgets.QWidget):
             return
         args["rfi_cluster_page"]["csv_path"] = self.le_select_csv.text()
         args["rfi_cluster_page"]["sample_num"] = self.sb_sample_num.value()
+        args["rfi_cluster_page"]["cut_point_rfi"] = self.chb_cut_point_rfi.isChecked()
         args["rfi_cluster_page"]["tsne_perplexity"] = self.sb_tsne_perplexity.value()
         args["rfi_cluster_page"]["cluster_mode"] = self.cbb_cluster_mode.currentIndex()+1
         args["rfi_cluster_page"]["n_clusters"] = self.sb_n_clusters.value()
@@ -348,35 +356,59 @@ class RfiClusterPage(QtWidgets.QWidget):
         self.image_2.setObjectName("image_2")
         self.image_2.setScaledContents(True)
 
+        self.image_3 = QtWidgets.QLabel(self)
+        self.image_3.setGeometry(QtCore.QRect(1140, 120, 750, 600))
+        self.image_3.setStyleSheet("background-color: rgb(0, 255, 127);")
+        self.image_3.setAlignment(QtCore.Qt.AlignCenter)
+        self.image_3.setObjectName("image_3")
+        self.image_3.setScaledContents(True)
+
         self.pb_set = QtWidgets.QPushButton(self)
-        self.pb_set.setGeometry(QtCore.QRect(1140, 720, 375, 140))
+        self.pb_set.setGeometry(QtCore.QRect(1140, 720, 250, 140))
         self.pb_set.setFont(font)
         self.pb_set.setText("参数设置")
         self.pb_set.setObjectName("pb_set")
 
-        self.pb_save_result = QtWidgets.QPushButton(self)
-        self.pb_save_result.setGeometry(QtCore.QRect(1515, 720, 375, 140))
-        self.pb_save_result.setFont(font)
-        self.pb_save_result.setText("保存结果")
-        self.pb_save_result.setObjectName("pb_save_result")
+        self.pb_display_switch = QtWidgets.QPushButton(self)
+        self.pb_display_switch.setGeometry(QtCore.QRect(1515-125, 720, 250, 140))
+        self.pb_display_switch.setFont(font)
+        self.pb_display_switch.setText("切换显示")
+        self.pb_display_switch.setObjectName("pb_display_switch")
+
+        # self.pb_obtain_k = QtWidgets.QPushButton(self)
+        # self.pb_obtain_k.setGeometry(QtCore.QRect(1515 - 125+250, 720, 250, 140))
+        # self.pb_obtain_k.setFont(font)
+        # self.pb_obtain_k.setText("计算K值")
+        # self.pb_obtain_k.setObjectName("pb_obtain_k")
 
         self.pb_rfi_reduction = QtWidgets.QPushButton(self)
-        self.pb_rfi_reduction.setGeometry(QtCore.QRect(1140, 860, 375, 140))
+        self.pb_rfi_reduction.setGeometry(QtCore.QRect(1140, 860, 250, 140))
         self.pb_rfi_reduction.setFont(font)
         self.pb_rfi_reduction.setText("特征降维")
         self.pb_rfi_reduction.setObjectName("pb_rfi_reduction")
 
         self.pb_rfi_cluster = QtWidgets.QPushButton(self)
-        self.pb_rfi_cluster.setGeometry(QtCore.QRect(1515, 860, 375, 140))
+        self.pb_rfi_cluster.setGeometry(QtCore.QRect(1515-125, 860, 250, 140))
         self.pb_rfi_cluster.setFont(font)
         self.pb_rfi_cluster.setText("特征聚类")
         self.pb_rfi_cluster.setObjectName("pb_rfi_cluster")
+
+        self.pb_save_result = QtWidgets.QPushButton(self)
+        self.pb_save_result.setGeometry(QtCore.QRect(1515 - 125 + 250, 860, 250, 140))
+        self.pb_save_result.setFont(font)
+        self.pb_save_result.setText("保存结果")
+        self.pb_save_result.setObjectName("pb_save_result")
 
         # 信号连接
         self.pb_return.clicked.connect(self._pb_return_action)
         self.pb_set.clicked.connect(self._pb_set_action)
         self.pb_rfi_reduction.clicked.connect(self._pb_rfi_reduction_action)
         self.pb_rfi_cluster.clicked.connect(self._pb_rfi_cluster_action)
+        self.pb_display_switch.clicked.connect(self._pb_display_switch_action)
+        self.pb_save_result.clicked.connect(self._pb_save_result_action)
+
+        self.image_2.setVisible(True)
+        self.image_3.setVisible(False)
 
         # 页面状态
         """
@@ -390,8 +422,14 @@ class RfiClusterPage(QtWidgets.QWidget):
             self.rfi_c = pickle.load(open(args["project_path"]+args["temp_data"]+"rfi_c_class.pkl", 'rb'))
             if self.rfi_c.y_est is not None:
                 self.page_state = 2
+                img = self.rfi_c.histogram_show(cluster_label=None, refer_cluster=True)
+                pix = img.toqpixmap()
+                self.image_2.setPixmap(pix)
             else:
                 self.page_state = 1
+                img = self.rfi_c.histogram_show(cluster_label=None, refer_cluster=False)
+                pix = img.toqpixmap()
+                self.image_2.setPixmap(pix)
 
             img = self.rfi_c.cluster_show()
             pix = img.toqpixmap()
@@ -419,12 +457,23 @@ class RfiClusterPage(QtWidgets.QWidget):
                 index_num = np.where(distance == distance.min())[0][0]
                 feature = self.rfi_c.rfi_features.iloc[index_num].values
                 rfi_f = RfiFeatures(args["project_path"]+args["FAST_path"]+feature[0])
+                if self.page_state == 2:
+                    label = self.rfi_c.y_est[index_num]
+                    img = self.rfi_c.histogram_show(cluster_label=label, refer_cluster=True)
+                    pix = img.toqpixmap()
+                    self.image_2.setPixmap(pix)
+                else:
+                    label = self.rfi_c.y_refer[index_num]
+                    img = self.rfi_c.histogram_show(cluster_label=label, refer_cluster=False)
+                    pix = img.toqpixmap()
+                    self.image_2.setPixmap(pix)
+
                 img = rfi_f.feature_rfi_show(rfi_feature=feature,
                                              edge_size=args["rfi_cluster_page"]["edge_size"],
-                                             label=self.rfi_c.y_est[index_num],
+                                             label=label,
                                              recount_mask=False)
                 pix = img.toqpixmap()
-                self.image_2.setPixmap(pix)
+                self.image_3.setPixmap(pix)
 
     def _pb_return_action(self):
         self.Stack.setCurrentIndex(0)
@@ -437,8 +486,11 @@ class RfiClusterPage(QtWidgets.QWidget):
         self.Stack.setCurrentIndex(3)
         QtWidgets.QApplication.processEvents()
 
-        if self.rfi_c is None or self.rfi_c.csv_path != args["rfi_cluster_page"]["csv_path"] or self.rfi_c.sample_num != args["rfi_cluster_page"]["sample_num"]:
+        if self.rfi_c is None or self.rfi_c.csv_path != args["rfi_cluster_page"]["csv_path"] \
+                or self.rfi_c.sample_num != args["rfi_cluster_page"]["sample_num"] \
+                or self.rfi_c.cut_point_rfi != args["rfi_cluster_page"]["cut_point_rfi"]:
             self.rfi_c = RfiCluster(csv_path=args["rfi_cluster_page"]["csv_path"],
+                                    cut_point_rfi=args["rfi_cluster_page"]["cut_point_rfi"],
                                     sample_num=args["rfi_cluster_page"]["sample_num"])
             self.rfi_c.dim_reduction(perplexity=args["rfi_cluster_page"]["tsne_perplexity"])
 
@@ -449,8 +501,15 @@ class RfiClusterPage(QtWidgets.QWidget):
         pix = img.toqpixmap()
         self.image_1.setPixmap(pix)
 
+        img = self.rfi_c.histogram_show(cluster_label=None, refer_cluster=False)
+        pix = img.toqpixmap()
+        self.image_2.setPixmap(pix)
+
         pickle.dump(self.rfi_c, open(args["project_path"]+args["temp_data"]+'rfi_c_class.pkl', 'wb'))
 
+        self.page_state = 1
+        self.image_2.setVisible(True)
+        self.image_3.setVisible(False)
         self.Stack.setCurrentIndex(2)
         QtWidgets.QApplication.processEvents()
         pass
@@ -460,9 +519,11 @@ class RfiClusterPage(QtWidgets.QWidget):
         self.Stack.setCurrentIndex(3)
         QtWidgets.QApplication.processEvents()
 
-        if self.rfi_c is None or self.rfi_c.csv_path != args["rfi_cluster_page"]["csv_path"] or self.rfi_c.sample_num != \
-                args["rfi_cluster_page"]["sample_num"]:
+        if self.rfi_c is None or self.rfi_c.csv_path != args["rfi_cluster_page"]["csv_path"] \
+                or self.rfi_c.sample_num != args["rfi_cluster_page"]["sample_num"] \
+                or self.rfi_c.cut_point_rfi != args["rfi_cluster_page"]["cut_point_rfi"]:
             self.rfi_c = RfiCluster(csv_path=args["rfi_cluster_page"]["csv_path"],
+                                    cut_point_rfi=args["rfi_cluster_page"]["cut_point_rfi"],
                                     sample_num=args["rfi_cluster_page"]["sample_num"])
 
             self.rfi_c.dim_reduction(perplexity=args["rfi_cluster_page"]["tsne_perplexity"])
@@ -483,14 +544,54 @@ class RfiClusterPage(QtWidgets.QWidget):
                                cluster_mode=cluster_mode,
                                **cluster_kwargs)
 
+
         img = self.rfi_c.cluster_show(show_est_label=True)
         pix = img.toqpixmap()
         self.image_1.setPixmap(pix)
 
+        img = self.rfi_c.histogram_show(cluster_label=None, refer_cluster=True)
+        pix = img.toqpixmap()
+        self.image_2.setPixmap(pix)
+
         pickle.dump(self.rfi_c, open(args["project_path"] + args["temp_data"] + 'rfi_c_class.pkl', 'wb'))
 
+        self.page_state = 2
+        self.image_2.setVisible(True)
+        self.image_3.setVisible(False)
         self.Stack.setCurrentIndex(2)
         QtWidgets.QApplication.processEvents()
+
+    def _pb_display_switch_action(self):
+
+        if self.image_2.isVisible():
+            self.image_2.setVisible(False)
+            self.image_3.setVisible(True)
+        else:
+            self.image_2.setVisible(True)
+            self.image_3.setVisible(False)
+
+
+    def _pb_save_result_action(self):
+        absolute_path = QtWidgets.QFileDialog.getExistingDirectory(self, "请选择保存路径", ".")
+        if absolute_path == "":
+            return
+
+        if self.page_state == 0:
+            QtWidgets.QMessageBox.information(self, "错误", "请先运行模型!")
+        else:
+            absolute_path = absolute_path + "/"
+            if self.image_1.pixmap() is not None:
+                image_1 = self.image_1.pixmap().toImage()
+                image_1.save(absolute_path + "rfi_cluster_image1.png")
+            if self.image_2.pixmap() is not None:
+                image_2 = self.image_2.pixmap().toImage()
+                image_2.save(absolute_path + "rfi_cluster_image2.png")
+            if self.image_3.pixmap() is not None:
+                image_3 = self.image_3.pixmap().toImage()
+                image_3.save(absolute_path + "rfi_cluster_image3.png")
+
+            pickle.dump(self.rfi_c, open(absolute_path + 'rfi_c_class.pkl', 'wb'))
+            QtWidgets.QMessageBox.information(self, "提示", "保存成功!")
 
 
 

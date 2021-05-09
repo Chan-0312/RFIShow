@@ -29,11 +29,12 @@ from core.utils import fig2data
 
 class RfiCluster:
 
-    def __init__(self, csv_path, sample_num=None):
+    def __init__(self, csv_path, cut_point_rfi=False, sample_num=None):
         """
         对RFI进行降维，聚类可视化
 
         :param csv_path: RFI特征csv文件路径
+        :param cut_point_rfi: 是否剔除单点状rfi
         :param sample_num: 分析样本数量
         """
 
@@ -41,6 +42,15 @@ class RfiCluster:
         self.random_state = 123
         self.rfi_features = pd.read_csv(csv_path)
         self.sample_num = sample_num
+        self.cut_point_rfi = cut_point_rfi
+
+        # 剔除单点噪声
+        if self.cut_point_rfi:
+            noise_type_0 = self.rfi_features['noise_type'].copy()
+            noise_type_0_invalid = np.where(noise_type_0 == 0)[0]
+            print('noise_type_0 amount:%d' % noise_type_0_invalid.shape[0])
+            self.rfi_features = self.rfi_features.drop(self.rfi_features.index[noise_type_0_invalid])
+            self.rfi_features.reset_index(drop=True, inplace=True)
 
         # 随机采样
         if self.sample_num is not None and self.rfi_features.shape[0] > self.sample_num > 0:
@@ -143,8 +153,13 @@ class RfiCluster:
                         color=colors[count], label="num=%d" % i, s=point_size)
             count += 1
 
+        if cluster_name == "None":
+            n_clusters = np.unique(y).shape[0]
+        else:
+            n_clusters = self.n_clusters
+
         plt.title('tsne_perplexity=%d,cluster_model=%s,n_clusters=%d'%
-                  (self.tsne_perplexity, cluster_name, self.n_clusters), size=15)
+                  (self.tsne_perplexity, cluster_name, n_clusters), size=15)
         plt.xlim([-1.1, 1.1])
         plt.ylim([-1.1, 1.1])
         plt.xticks([])
@@ -157,6 +172,48 @@ class RfiCluster:
             plt.savefig(save_fig)
         # else:
         #     plt.show()
+        return fig2data(fig)
+
+    def histogram_show(self, cluster_label=None, refer_cluster=False, save_fig=None):
+        """
+
+        :param cluster_label: 统计分析的标签号,如果为None则统计分析全部数据
+        :param refer_cluster: 标签参考的对象，True表示参考聚类后的标签，False表示参考原始标签
+        :param save_fig: 保存图像路径，None不保存
+        :return: PIL图像格式
+        """
+        # 显示图像尺寸
+        fig = plt.figure(figsize=(10, 8), dpi=128)
+
+        if refer_cluster and self.y_est is not None:
+            y = self.y_est
+        else:
+            y = self.y_refer
+
+        if cluster_label is not None:
+            index_list = np.where(y==cluster_label)[0]
+            rfi_features = self.rfi_features.iloc[index_list]
+            fig.suptitle("cluster_label=%d, num_samples=%d"%(cluster_label, len(index_list)), size=15)
+        else:
+            rfi_features = self.rfi_features
+            fig.suptitle("cluster_label=all, num_samples=%d"%(rfi_features.shape[0]), size=15)
+
+
+        label_name = ['x', 'y', 'bandwidth', 'duration', 'data_mean', 'data_var']
+        bins = [50, 50, 50, 50, 50, 50]
+        for i in range(6):
+            ax = plt.subplot(2, 3, i + 1)
+            rfi_features[label_name[i]].hist(histtype='stepfilled', bins=bins[i])
+            ax.set_xlabel(label_name[i], fontsize=15)
+            if i % 3 == 0:
+                ax.set_ylabel('Num.', fontsize=15)
+
+        plt.tight_layout()
+        if save_fig is not None:
+            plt.savefig(save_fig)
+        # else:
+        #     plt.show()
+
         return fig2data(fig)
 
     def cluster_save(self, save_csv_name="./rfi_feature_data.csv"):
