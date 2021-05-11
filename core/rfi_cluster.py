@@ -23,41 +23,74 @@ from sklearn.manifold import TSNE
 from sklearn.preprocessing import StandardScaler, MinMaxScaler
 from sklearn.cluster import KMeans, AgglomerativeClustering
 from sklearn.mixture import GaussianMixture
+from sklearn.neighbors import KNeighborsClassifier
+
 
 from core.utils import fig2data
 
 
+
+class RfiCut:
+
+    def __init__(self, standard):
+
+        self.knn_list = []
+        self.C_list = []
+        self.standard = standard
+
+    def add_cut(self, X, Y, C, n_neighbors=30):
+        knn_model = KNeighborsClassifier(n_neighbors=n_neighbors).fit(X, Y)
+        self.knn_list.append(knn_model)
+        self.C_list.append(C)
+
+    def cut(self, rfi_features):
+
+        X_input = self.standard.transform(rfi_features[['y', 'bandwidth', 'duration', 'data_mean', 'data_var']].values)
+
+        for knn, C in zip(self.knn_list, self.C_list):
+
+            y_pred = knn.predict(X_input)
+
+            cut_index = set()
+            for c in C:
+                cut_index = cut_index | set(np.where(y_pred == c)[0])
+
+            rfi_features = rfi_features.drop(rfi_features.index[list(cut_index)])
+            rfi_features.reset_index(drop=True, inplace=True)
+
+        return rfi_features
+
+
+
 class RfiCluster:
 
-    def __init__(self, csv_path, cut_point_rfi=False, sample_num=None):
+    def __init__(self, csv_path, rfi_cut=None, sample_num=None):
         """
         对RFI进行降维，聚类可视化
 
         :param csv_path: RFI特征csv文件路径
-        :param cut_point_rfi: 是否剔除单点状rfi
+        :param rfi_cut: rfi样本剔除类
         :param sample_num: 分析样本数量
         """
-
         self.csv_path = csv_path
         self.random_state = 123
         self.rfi_features = pd.read_csv(csv_path)
         self.sample_num = sample_num
-        self.cut_point_rfi = cut_point_rfi
 
-        # 剔除单点噪声
-        if self.cut_point_rfi:
-            noise_type_0 = self.rfi_features['noise_type'].copy()
-            noise_type_0_invalid = np.where(noise_type_0 == 0)[0]
-            print('noise_type_0 amount:%d' % noise_type_0_invalid.shape[0])
-            self.rfi_features = self.rfi_features.drop(self.rfi_features.index[noise_type_0_invalid])
-            self.rfi_features.reset_index(drop=True, inplace=True)
+        standard = StandardScaler().fit(self.rfi_features[['y', 'bandwidth', 'duration', 'data_mean', 'data_var']].values)
+
+        # 根据knn剔除rfi
+        if rfi_cut is not None:
+            standard = rfi_cut.standard
+            self.rfi_features = rfi_cut.cut(self.rfi_features)
+            del rfi_cut
 
         # 随机采样
         if self.sample_num is not None and self.rfi_features.shape[0] > self.sample_num > 0:
             self.rfi_features = self.rfi_features.sample(n=self.sample_num, random_state=self.random_state)
 
         self.X = self.rfi_features[['y', 'bandwidth', 'duration', 'data_mean', 'data_var']].values
-        self.X_std = StandardScaler().fit_transform(self.X)
+        self.X_std = standard.transform(self.X)
         self.y_refer = self.rfi_features['noise_type'].values
 
         self.X_reduce = None

@@ -44,8 +44,8 @@ def _get_settings(setting_name):
     elif setting_name == "rfi_cluster_page":
         args = {
             "csv_path": cf.get(setting_name, "csv_path"),
+            "cut_path": cf.get(setting_name, "cut_path"),
             "sample_num": cf.getint(setting_name, "sample_num"),
-            "cut_point_rfi": cf.getboolean(setting_name, "cut_point_rfi"),
             "tsne_perplexity": cf.getint(setting_name, "tsne_perplexity"),
             "cluster_mode": cf.getint(setting_name, "cluster_mode"),
             "n_clusters": cf.getint(setting_name, "n_clusters"),
