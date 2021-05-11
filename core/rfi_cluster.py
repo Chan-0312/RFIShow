@@ -36,12 +36,14 @@ class RfiCut:
 
         self.knn_list = []
         self.C_list = []
+        self.cut_info = []
         self.standard = standard
 
-    def add_cut(self, X, Y, C, n_neighbors=30):
+    def add_cut(self, X, Y, C, n_neighbors=5):
         knn_model = KNeighborsClassifier(n_neighbors=n_neighbors).fit(X, Y)
         self.knn_list.append(knn_model)
         self.C_list.append(C)
+        self.cut_info.append(C)
 
     def cut(self, rfi_features):
 
@@ -55,18 +57,34 @@ class RfiCut:
             for c in C:
                 cut_index = cut_index | set(np.where(y_pred == c)[0])
 
-            rfi_features = rfi_features.drop(rfi_features.index[list(cut_index)])
+            cut_index = list(cut_index)
+
+            rfi_features = rfi_features.drop(rfi_features.index[cut_index])
             rfi_features.reset_index(drop=True, inplace=True)
 
         return rfi_features
+
+    def get_info(self):
+
+        return self.cut_info
 
 
 
 class RfiCluster:
 
-    def __init__(self, csv_path, rfi_cut=None, sample_num=None):
+    def __init__(self, csv_path):
         """
         对RFI进行降维，聚类可视化
+
+         :param csv_path: RFI特征csv文件路径
+        """
+        self.init(csv_path=csv_path,
+                  rfi_cut=None,
+                  sample_num=500)
+
+    def init(self, csv_path, rfi_cut=None, sample_num=None):
+        """
+        对RfiCluster类进行初始化
 
         :param csv_path: RFI特征csv文件路径
         :param rfi_cut: rfi样本剔除类
@@ -75,13 +93,15 @@ class RfiCluster:
         self.csv_path = csv_path
         self.random_state = 123
         self.rfi_features = pd.read_csv(csv_path)
+        self.standard = StandardScaler().fit(self.rfi_features[['y', 'bandwidth', 'duration', 'data_mean', 'data_var']].values)
         self.sample_num = sample_num
-
-        standard = StandardScaler().fit(self.rfi_features[['y', 'bandwidth', 'duration', 'data_mean', 'data_var']].values)
+        self.cut_info = []
 
         # 根据knn剔除rfi
         if rfi_cut is not None:
-            standard = rfi_cut.standard
+            self.cut_info = rfi_cut.get_info()
+            print("cut_info:\n", self.cut_info)
+            self.standard = rfi_cut.standard
             self.rfi_features = rfi_cut.cut(self.rfi_features)
             del rfi_cut
 
@@ -90,7 +110,7 @@ class RfiCluster:
             self.rfi_features = self.rfi_features.sample(n=self.sample_num, random_state=self.random_state)
 
         self.X = self.rfi_features[['y', 'bandwidth', 'duration', 'data_mean', 'data_var']].values
-        self.X_std = standard.transform(self.X)
+        self.X_std = self.standard.transform(self.X)
         self.y_refer = self.rfi_features['noise_type'].values
 
         self.X_reduce = None
@@ -149,6 +169,35 @@ class RfiCluster:
         self.y_est = mode.fit_predict(self.X_std)
 
         return self.y_est
+
+    def cut_label(self, cut_list, refer_cluster=False):
+
+        if refer_cluster and self.y_est is not None:
+            y = self.y_est
+        else:
+            y = self.y_refer
+
+        cut_index = set()
+        for c in cut_list:
+            cut_index = cut_index | set(np.where(y == c)[0])
+
+        cut_index = list(cut_index)
+
+        self.rfi_features = self.rfi_features.drop(self.rfi_features.index[cut_index])
+        self.rfi_features.reset_index(drop=True, inplace=True)
+
+        self.X = np.delete(self.X, cut_index, axis=0)
+        self.X_std = np.delete(self.X_std, cut_index, axis=0)
+        self.y_refer = np.delete(self.y_refer, cut_index, axis=0)
+
+        if self.y_est is not None:
+            self.y_est = np.delete(self.y_est, cut_index, axis=0)
+        if self.X_reduce is not None:
+            self.X_reduce = np.delete(self.X_reduce, cut_index, axis=0)
+        self.n_clusters = np.unique(self.y_refer).shape[0]
+
+
+
 
     def cluster_show(self, show_cluster_list=None, show_est_label=True, point_size=3, save_fig=None):
         """
@@ -248,25 +297,3 @@ class RfiCluster:
         #     plt.show()
 
         return fig2data(fig)
-
-    def cluster_save(self, save_csv_name="./rfi_feature_data.csv"):
-        """
-        保存降维与聚类的结果
-
-        :param save_csv_name: csv文件保存路径
-        :return: 对self.rfi_features添加降维数据和聚类标签
-        """
-
-        assert self.y_est is not None
-
-        if self.X_reduce is None:
-            self.dim_reduction()
-
-        cluster_rfi_features = self.rfi_features.copy(deep=True)
-        cluster_rfi_features["Dim_1"] = self.X_reduce[:, 0]
-        cluster_rfi_features["Dim_2"] = self.X_reduce[:, 1]
-        cluster_rfi_features["cluster_label"] = self.y_est
-
-        cluster_rfi_features.to_csv(save_csv_name, index=False)
-
-        return cluster_rfi_features
