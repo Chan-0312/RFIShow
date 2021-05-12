@@ -21,7 +21,8 @@ import matplotlib.pyplot as plt
 
 from sklearn.manifold import TSNE
 from sklearn.preprocessing import StandardScaler, MinMaxScaler
-from sklearn.cluster import KMeans, AgglomerativeClustering
+from sklearn.cluster import KMeans, AgglomerativeClustering, DBSCAN
+
 from sklearn.mixture import GaussianMixture
 from sklearn.neighbors import KNeighborsClassifier
 
@@ -144,6 +145,7 @@ class RfiCluster:
             - 'AgglomerativeClustering': AgglomerativeClustering算法
             - 'KMeans': KMeans算法
             - 'GaussianMixture': GaussianMixture
+            - 'DBSCAN': DBSCAN算法
             - 用户也可以直接传入自定义算法函数
         :param kwargs: cluster_mode聚类方法的参数
         :return: 聚类标签
@@ -161,6 +163,8 @@ class RfiCluster:
             mode = GaussianMixture(n_components=n_clusters,
                                    random_state=self.random_state,
                                    **kwargs)
+        elif cluster_mode == "DBSCAN":
+            mode = DBSCAN(**kwargs)
         else:
             mode = cluster_mode(n_clusters=n_clusters,
                                 **kwargs)

@@ -187,7 +187,7 @@ class SettingsPage(QtWidgets.QWidget):
         self.sb_n_clusters.setFont(font)
         self.sb_n_clusters.setAlignment(QtCore.Qt.AlignCenter)
         self.sb_n_clusters.setAccelerated(True)
-        self.sb_n_clusters.setMaximum(20)
+        self.sb_n_clusters.setMaximum(30)
         self.sb_n_clusters.setSingleStep(2)
         self.sb_n_clusters.setObjectName("sb_n_clusters")
         self.cbb_cluster_mode = QtWidgets.QComboBox(self)
@@ -197,6 +197,7 @@ class SettingsPage(QtWidgets.QWidget):
         self.cbb_cluster_mode.addItem("AgglomerativeClustering")
         self.cbb_cluster_mode.addItem("KMeans")
         self.cbb_cluster_mode.addItem("GaussianMixture")
+        self.cbb_cluster_mode.addItem("DBSCAN")
 
         self.label_6 = QtWidgets.QLabel(self)
         self.label_6.setGeometry(QtCore.QRect(20, 280+30, 130, 40))
@@ -560,6 +561,8 @@ class RfiClusterPage(QtWidgets.QWidget):
             cluster_mode = "KMeans"
         elif args["rfi_cluster_page"]["cluster_mode"] == 3:
             cluster_mode = "GaussianMixture"
+        elif args["rfi_cluster_page"]["cluster_mode"] == 4:
+            cluster_mode = "DBSCAN"
 
         if args["rfi_cluster_page"]["cluster_kwargs"] == "None":
             cluster_kwargs = {}
