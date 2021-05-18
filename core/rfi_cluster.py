@@ -47,7 +47,11 @@ class RfiCut:
         self.cut_info.append(C)
 
     def cut(self, rfi_features):
-
+        """
+        剔除根据knn_list剔除数据集
+        :param rfi_features: 输入数据集
+        :param mode: 0未剔除全部， 1未仅剔除最后加入的knn分类器
+        """
         for knn, C in zip(self.knn_list, self.C_list):
             X_input = self.standard.transform(
                 rfi_features[['y', 'bandwidth', 'duration', 'data_mean', 'data_var']].values)
@@ -63,6 +67,7 @@ class RfiCut:
 
             rfi_features = rfi_features.drop(rfi_features.index[cut_index])
             rfi_features.reset_index(drop=True, inplace=True)
+
 
         return rfi_features
 
@@ -80,6 +85,7 @@ class RfiCluster:
 
          :param csv_path: RFI特征csv文件路径
         """
+        self.cut_info = None
         self.init(csv_path=csv_path,
                   rfi_cut=None,
                   sample_num=500)
@@ -94,9 +100,9 @@ class RfiCluster:
         """
         self.csv_path = csv_path
         self.random_state = 123
+
         self.rfi_features = pd.read_csv(csv_path)
         self.standard = StandardScaler().fit(self.rfi_features[['y', 'bandwidth', 'duration', 'data_mean', 'data_var']].values)
-        self.sample_num = sample_num
         self.cut_info = []
 
         # 根据knn剔除rfi
@@ -107,6 +113,8 @@ class RfiCluster:
             self.rfi_features = rfi_cut.cut(self.rfi_features)
             del rfi_cut
 
+
+        self.sample_num = sample_num
         # 随机采样
         if self.sample_num is not None and self.rfi_features.shape[0] > self.sample_num > 0:
             self.rfi_features = self.rfi_features.sample(n=self.sample_num, random_state=self.random_state)

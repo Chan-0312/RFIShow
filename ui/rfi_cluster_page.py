@@ -189,7 +189,7 @@ class SettingsPage(QtWidgets.QWidget):
         self.sb_n_clusters.setFont(font)
         self.sb_n_clusters.setAlignment(QtCore.Qt.AlignCenter)
         self.sb_n_clusters.setAccelerated(True)
-        self.sb_n_clusters.setMaximum(30)
+        self.sb_n_clusters.setMaximum(100)
         self.sb_n_clusters.setSingleStep(2)
         self.sb_n_clusters.setObjectName("sb_n_clusters")
         self.cbb_cluster_mode = QtWidgets.QComboBox(self)
@@ -571,6 +571,18 @@ class RfiClusterPage(QtWidgets.QWidget):
                 self.image_3.setPixmap(pix)
                 QtWidgets.QApplication.processEvents()
 
+                img = self.rfi_cluster.cluster_show(show_cluster_list=[label], show_est_label=refer_cluster)
+                pix = img.toqpixmap()
+                self.image_1.setPixmap(pix)
+            else:
+                if self.page_state == 2:
+                    refer_cluster = True
+                else:
+                    refer_cluster = False
+                img = self.rfi_cluster.cluster_show(show_cluster_list=None, show_est_label=refer_cluster)
+                pix = img.toqpixmap()
+                self.image_1.setPixmap(pix)
+
             if self.pb_rfi_cut.text() == "保存配置":
 
                 button = QtWidgets.QMessageBox.warning(self, "提示",
@@ -595,6 +607,7 @@ class RfiClusterPage(QtWidgets.QWidget):
 
         if self.rfi_cluster.csv_path != args["rfi_cluster_page"]["csv_path"] \
                 or self.rfi_cluster.sample_num != args["rfi_cluster_page"]["sample_num"] \
+                or self.rfi_cluster.tsne_perplexity != args["rfi_cluster_page"]["tsne_perplexity"] \
                 or (self.rfi_cut is not None and self.rfi_cut.get_info() != self.rfi_cluster.cut_info):
 
             if args["rfi_cluster_page"]["rfi_cut"]:
@@ -633,6 +646,7 @@ class RfiClusterPage(QtWidgets.QWidget):
 
         if self.rfi_cluster.csv_path != args["rfi_cluster_page"]["csv_path"] \
                 or self.rfi_cluster.sample_num != args["rfi_cluster_page"]["sample_num"] \
+                or self.rfi_cluster.tsne_perplexity != args["rfi_cluster_page"]["tsne_perplexity"] \
                 or (self.rfi_cut is not None and self.rfi_cut.get_info() != self.rfi_cluster.cut_info):
 
             if args["rfi_cluster_page"]["rfi_cut"]:
