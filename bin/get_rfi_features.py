@@ -32,14 +32,14 @@ if __name__ == '__main__':
     # 读取参数
     fits_dir = sys.argv[1]
 
-    if args["rfishow_page"]["mask_kwargs"] == "None":
+    if args["rfi_detect_page"]["mask_kwargs"] == "None":
         mask_kwargs = {}
     else:
-        mask_kwargs = dict(s.split("=") for s in args["rfishow_page"]["mask_kwargs"].split("|"))
+        mask_kwargs = dict(s.split("=") for s in args["rfi_detect_page"]["mask_kwargs"].split("|"))
 
     get_rfi_features(fits_dir,
-                     npol_num=args["rfishow_page"]["npol_num"],
-                     connectivity=args["rfishow_page"]["connectivity"],
-                     mask_mode=args["rfishow_page"]["mask_mode"],
+                     npol_num=args["rfi_detect_page"]["npol_num"],
+                     connectivity=args["rfi_detect_page"]["connectivity"],
+                     mask_mode=args["rfi_detect_page"]["mask_mode"],
                      **mask_kwargs)
 

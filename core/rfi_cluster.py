@@ -48,9 +48,9 @@ class RfiCut:
 
     def cut(self, rfi_features):
 
-        X_input = self.standard.transform(rfi_features[['y', 'bandwidth', 'duration', 'data_mean', 'data_var']].values)
-
         for knn, C in zip(self.knn_list, self.C_list):
+            X_input = self.standard.transform(
+                rfi_features[['y', 'bandwidth', 'duration', 'data_mean', 'data_var']].values)
 
             y_pred = knn.predict(X_input)
 
@@ -59,6 +59,7 @@ class RfiCut:
                 cut_index = cut_index | set(np.where(y_pred == c)[0])
 
             cut_index = list(cut_index)
+            print("cut_num:%d"%len(cut_index))
 
             rfi_features = rfi_features.drop(rfi_features.index[cut_index])
             rfi_features.reset_index(drop=True, inplace=True)
@@ -164,13 +165,14 @@ class RfiCluster:
                                    random_state=self.random_state,
                                    **kwargs)
         elif cluster_mode == "DBSCAN":
+            kwargs['eps'] = float(kwargs['eps'])
             mode = DBSCAN(**kwargs)
         else:
             mode = cluster_mode(n_clusters=n_clusters,
                                 **kwargs)
 
-        self.n_clusters = n_clusters
         self.y_est = mode.fit_predict(self.X_std)
+        self.n_clusters = np.unique(self.y_est).shape[0]
 
         return self.y_est
 

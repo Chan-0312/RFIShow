@@ -34,13 +34,13 @@ class MainPage(QtWidgets.QWidget):
         font = QtGui.QFont()
         font.setFamily("Arial")
 
-        self.lb_gif = QtWidgets.QLabel(self)
-        self.lb_gif.setGeometry(QtCore.QRect(40, 160, 1300, 560+240)) # 500,280
-        self.lb_gif.setAlignment(QtCore.Qt.AlignCenter)
-        self.lb_gif.setScaledContents(True)
-        self.gif = QtGui.QMovie(args["project_path"]+'/resource/main_dynamic.gif')
-        self.lb_gif.setMovie(self.gif)
-        self.gif.start()
+        # self.lb_gif = QtWidgets.QLabel(self)
+        # self.lb_gif.setGeometry(QtCore.QRect(40, 160, 1300, 560+240)) # 500,280
+        # self.lb_gif.setAlignment(QtCore.Qt.AlignCenter)
+        # self.lb_gif.setScaledContents(True)
+        # self.gif = QtGui.QMovie(args["project_path"]+'/resource/main_dynamic.gif')
+        # self.lb_gif.setMovie(self.gif)
+        # self.gif.start()
 
         self.lb_title = QtWidgets.QLabel(self)
         self.lb_title.setText("RFIShow")
@@ -50,14 +50,14 @@ class MainPage(QtWidgets.QWidget):
         self.lb_title.setAlignment(QtCore.Qt.AlignCenter)
 
         self.pb_to_p1 = QtWidgets.QPushButton(self)
-        self.pb_to_p1.setGeometry(QtCore.QRect(1400, 200, 480, 100))
+        self.pb_to_p1.setGeometry(QtCore.QRect(720, 200+100, 480, 100))
         font.setPointSize(16)
         self.pb_to_p1.setFont(font)
         self.pb_to_p1.setText("RFI检测分析")
         self.pb_to_p1.setObjectName("pb_to_p1")
 
         self.pb_to_p2 = QtWidgets.QPushButton(self)
-        self.pb_to_p2.setGeometry(QtCore.QRect(1400, 800, 480, 100))
+        self.pb_to_p2.setGeometry(QtCore.QRect(720, 800-100, 480, 100))
         font.setPointSize(16)
         self.pb_to_p2.setFont(font)
         self.pb_to_p2.setText("RFI聚类分析")

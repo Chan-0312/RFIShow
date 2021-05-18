@@ -1,6 +1,12 @@
 # RFIShow
-- **项目介绍**: *RFIShow主要致力于给天文科研人员提供一个可视化的交互界面，简化对FAST天文观测数据进行RFI检测、RFI特征提取以及聚类分析等的使用。*
-
+- **项目介绍**: RFIShow软件致力于打造为一个对FAST数据进行聚类可视化分析的软件，为用户提供FAST数据分析、RFI检测分析、RFI连通块聚类分析等功能。具体如下：
+  1. 可视化FAST数据，并且支持局部区域数据的放大显示；
+  2. 对FAST数据进行RFI检测、调参与分析；
+  3.  提取RFI连通块特征数据；
+  4. 对RFI连通块数据集进行批量分析：降维、聚类、分类器剔除等；
+  5. 支持导出中间测试结果数据；
+  6. 提供API接口供高级用户使用；
+  7. ...
 - **项目负责人**: *熊盛春*
 ---
 
@@ -48,7 +54,7 @@
 
 ### 1.2 RFI聚类分析
 
-> **功能**：对提取的RFI特征进行聚类分析，并可视化聚类的结果。
+> **功能**：采用了析取的方法对提取的RFI特征进行聚类分析，并可视化聚类的结果。
 
 - [x] **参数设置**：
   - [x] 选择RFI特征数据的文件。
@@ -58,6 +64,7 @@
     - [x] KMeans
     - [x] AgglomerativeClustering
     - [x] GaussianMixture
+    - [x] DBSCAN
     - [x] 用户自定义
   - [ ] 聚类个数K值的确定。
 - [x] **显示聚类结果与局部RFI可视化**：
@@ -66,6 +73,7 @@
   - [x] 显示统计数据分析。
   - [ ] 查询记录(记录用户点击查询的数据，便于用户的对比)。
   - [ ] 导出查询记录。
+  - [x] 导出选中聚类区域样本数据。
 - [x] 其他
   - [x] 能够保存退出前数据降维的结果，避免重复运算。
 
@@ -135,6 +143,9 @@ $ python main.py
   1. 实现表格数据排序的功能。
   2. 重构RFI聚类分析界面，包括一个主显示，两个副显示，已经5个功能按键(参数设置、切换显示、特征降维、特征聚类、保存结果)。
   3. 加入了一个切换显示功能，能够切换显示聚类类别统计信息和RFI局部显示信息。
+- **~2021.5.18---v0.4:**
+  1. 增加了DBSCAN聚类方法。
+  2. 加入了鼠标框选聚类样本数据导出的功能。
 
 # 六、界面演示
 
@@ -144,22 +155,8 @@ $ python main.py
 
 ## 6.2 RFI检测分析界面
 
-![RFIShow/detect_page_1.png at master · Chan-0312/RFIShow (github.com)](https://github.com/Chan-0312/RFIShow/blob/master/resource/image/detect_page_1.png)
-
-![RFIShow/detect_page_2.png at master · Chan-0312/RFIShow (github.com)](https://github.com/Chan-0312/RFIShow/blob/master/resource/image/detect_page_2.png)
-
-![RFIShow/detect_page_3.png at master · Chan-0312/RFIShow (github.com)](https://github.com/Chan-0312/RFIShow/blob/master/resource/image/detect_page_3.png)
-
-![RFIShow/detect_page_4.png at master · Chan-0312/RFIShow (github.com)](https://github.com/Chan-0312/RFIShow/blob/master/resource/image/detect_page_4.png)
+![RFIShow/detect_page_1.png at master · Chan-0312/RFIShow (github.com)](https://github.com/Chan-0312/RFIShow/blob/master/resource/image/detect_page.png)
 
 ## 6.3 RFI聚类分析界面
 
-![RFIShow/cluster_page_1.png at master · Chan-0312/RFIShow (github.com)](https://github.com/Chan-0312/RFIShow/blob/master/resource/image/cluster_page_1.png)
-
-![RFIShow/cluster_page_2.png at master · Chan-0312/RFIShow (github.com)](https://github.com/Chan-0312/RFIShow/blob/master/resource/image/cluster_page_2.png)
-
-![RFIShow/cluster_page_3.png at master · Chan-0312/RFIShow (github.com)](https://github.com/Chan-0312/RFIShow/blob/master/resource/image/cluster_page_3.png)
-
-![RFIShow/cluster_page_4.png at master · Chan-0312/RFIShow (github.com)](https://github.com/Chan-0312/RFIShow/blob/master/resource/image/cluster_page_4.png)
-
-![RFIShow/cluster_page_5.png at master · Chan-0312/RFIShow (github.com)](https://github.com/Chan-0312/RFIShow/blob/master/resource/image/cluster_page_5.png)
+![RFIShow/cluster_page_1.png at master · Chan-0312/RFIShow (github.com)](https://github.com/Chan-0312/RFIShow/blob/master/resource/image/cluster_page.png)

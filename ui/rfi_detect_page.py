@@ -402,7 +402,7 @@ class RfiDetectPage(QtWidgets.QWidget):
         # 设置数据层次结构，4行4列
         self.model = QtGui.QStandardItemModel(TABLEVIEW_SIZE, 7)
         # 设置水平方向四个头标签文本内容
-        self.model.setHorizontalHeaderLabels(['编号','噪声类型','起始频率','噪声带宽','持续时间','强度均值','强度方差'])
+        self.model.setHorizontalHeaderLabels(['编号','噪声类型','起始频率','频带宽度','持续时间','强度均值','强度方差'])
         # 自动调整大小尺寸
         self.tableView.horizontalHeader().setSectionResizeMode(QtWidgets.QHeaderView.Stretch)
         self.tableView.verticalHeader().setSectionResizeMode(QtWidgets.QHeaderView.Stretch)
@@ -530,8 +530,7 @@ class RfiDetectPage(QtWidgets.QWidget):
         if self.pb_get_feature.text() == "特征提取":
             # 清空数据
             self.model.clear()
-            self.model.setHorizontalHeaderLabels(['编号', '噪声类型', '起始频率', '噪声带宽', '持续时间', '强度均值', '强度方差'])
-
+            self.model.setHorizontalHeaderLabels(['编号', '噪声类型', '起始频率', '频带宽度', '持续时间', '强度均值', '强度方差'])
             self.pb_get_feature.setText("结束分析")
             self.Stack.setCurrentIndex(3)
             QtWidgets.QApplication.processEvents()

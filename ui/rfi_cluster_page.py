@@ -24,6 +24,8 @@ from conf import args, save_sttings
 from core.rfi_features import RfiFeatures
 from core.rfi_cluster import RfiCluster, RfiCut
 
+# 特征提取的表格显示数据上限
+TABLEVIEW_SIZE = 300
 
 class SettingsPage(QtWidgets.QWidget):
     """
@@ -305,10 +307,61 @@ class SettingsPage(QtWidgets.QWidget):
         self.close()
 
 
+class PenLabel(QtWidgets.QLabel):
+    """
+    矩形框选label
+    """
+    x0 = 0
+    y0 = 0
+    x1 = 0
+    y1 = 0
+    flag = False
+    signel = None
+
+    #鼠标点击事件
+    def mousePressEvent(self, event):
+        self.flag = True
+        self.x0 = event.x()
+        self.y0 = event.y()
+
+    #鼠标释放事件
+    def mouseReleaseEvent(self, event):
+        self.flag = False
+        if self.signel is not None:
+            self.signel.emit(self.rect.x(),self.rect.y(),self.rect.width(),self.rect.height())
+
+    #鼠标移动事件
+    def mouseMoveEvent(self, event):
+        if self.flag:
+            self.x1 = event.x()
+            self.y1 = event.y()
+            self.update()
+
+     #绘制事件
+    def paintEvent(self, event):
+        super().paintEvent(event)
+        self.rect =QtCore.QRect(self.x0, self.y0, abs(self.x1-self.x0), abs(self.y1-self.y0))
+        painter = QtGui.QPainter(self)
+        painter.setPen(QtGui.QPen(QtCore.Qt.red,2,QtCore.Qt.SolidLine))
+        painter.drawRect(self.rect)
+
+    def reinit(self):
+        self.x0 = 0
+        self.y0 = 0
+        self.x1 = 0
+        self.y1 = 0
+        self.flag = False
+
+    def setSignel(self, signel):
+        self.signel = signel
+
+
+
 class RfiClusterPage(QtWidgets.QWidget):
     """
     RFI 特征聚类分析界面
     """
+    penlabel_signel = QtCore.pyqtSignal(int, int, int, int)
 
     def __init__(self, Stack):
         """
@@ -393,10 +446,44 @@ class RfiClusterPage(QtWidgets.QWidget):
         self.pb_rfi_cluster.setObjectName("pb_rfi_cluster")
 
         self.pb_save_result = QtWidgets.QPushButton(self)
-        self.pb_save_result.setGeometry(QtCore.QRect(1515 - 125 + 250, 860, 250, 140))
+        self.pb_save_result.setGeometry(QtCore.QRect(1515 - 125 + 250, 860, 250, 70))
         self.pb_save_result.setFont(font)
         self.pb_save_result.setText("保存结果")
         self.pb_save_result.setObjectName("pb_save_result")
+
+        self.pb_select_export = QtWidgets.QPushButton(self)
+        self.pb_select_export.setGeometry(QtCore.QRect(1515 - 125 + 250, 860+70, 250, 70))
+        self.pb_select_export.setFont(font)
+        self.pb_select_export.setText("选中导出")
+        self.pb_select_export.setObjectName("pb_select_export")
+
+        self.penlabel = PenLabel(self)
+        self.penlabel.setGeometry(QtCore.QRect(20, 120, 1100, 880))
+        self.penlabel.setAlignment(QtCore.Qt.AlignCenter)
+        self.penlabel.setObjectName("penlabel")
+        self.penlabel.setScaledContents(True)
+        self.penlabel.setVisible(False)
+        self.penlabel.setSignel(self.penlabel_signel)
+
+        self.tableView = QtWidgets.QTableView(self)
+        self.tableView.setGeometry(QtCore.QRect(20, 120, 1100, 880))
+        # 设置数据层次结构，4行4列
+        self.model = QtGui.QStandardItemModel(TABLEVIEW_SIZE, 8)
+        # 设置水平方向四个头标签文本内容
+        self.model.setHorizontalHeaderLabels(['编号', '文件名', '聚类编号', '起始频率', '频带宽度', '持续时间', '强度均值', '强度方差'])
+        # 自动调整大小尺寸
+        self.tableView.horizontalHeader().setSectionResizeMode(QtWidgets.QHeaderView.Stretch)
+        self.tableView.verticalHeader().setSectionResizeMode(QtWidgets.QHeaderView.Stretch)
+        # 不允许编辑
+        self.tableView.setEditTriggers(QtWidgets.QAbstractItemView.NoEditTriggers)
+        # 隐藏序号
+        self.tableView.verticalHeader().hide()
+        # 表头排序
+        self.tableView.setSortingEnabled(True)
+        # 设置数据
+        self.tableView.setModel(self.model)
+        # 不显示
+        self.tableView.setVisible(False)
 
         # 信号连接
         self.pb_return.clicked.connect(self._pb_return_action)
@@ -406,6 +493,9 @@ class RfiClusterPage(QtWidgets.QWidget):
         self.pb_display_switch.clicked.connect(self._pb_display_switch_action)
         self.pb_save_result.clicked.connect(self._pb_save_result_action)
         self.pb_rfi_cut.clicked.connect(self._pb_rfi_cut_action)
+        self.pb_select_export.clicked.connect(self._pb_select_export_action)
+        self.penlabel_signel.connect(self._penlabel_signel_action)
+        self.tableView.clicked.connect(self._tableView_action)
 
         self.image_2.setVisible(True)
         self.image_3.setVisible(False)
@@ -439,7 +529,7 @@ class RfiClusterPage(QtWidgets.QWidget):
 
         if os.path.exists(args["project_path"]+args["temp_data"]+"rfi_cut_class.pkl"):
             self.rfi_cut = pickle.load(open(args["project_path"]+args["temp_data"]+"rfi_cut_class.pkl", 'rb'))
-            print(self.rfi_cut.get_info())
+            # print(self.rfi_cut.get_info())
         else:
             self.rfi_cut = None
 
@@ -449,12 +539,11 @@ class RfiClusterPage(QtWidgets.QWidget):
         :param event:
         :return:
         """
-        if (self.page_state == 1 or self.page_state == 2) and event.button() == 1:
+        if (self.page_state == 1 or self.page_state == 2) and event.button() == 1 and self.pb_select_export.text() != "结束导出":
             xy = event.pos() - QtCore.QPoint(42, 163)  # 返回鼠标坐标 (42,163), (1062,816)
             x = 2.2*(xy.x() / 1062) - 1.1
             y = 2.2*(xy.y() / 816) - 1.1
             y = -y
-
             if x < -1.1 or x > 1.1 or y < -1.1 or y > 1.1:
                 return
 
@@ -490,6 +579,8 @@ class RfiClusterPage(QtWidgets.QWidget):
                                              QtWidgets.QMessageBox.No)
                 if button == QtWidgets.QMessageBox.Yes:
                     self.cut_list.append(label)
+
+
 
     def _pb_return_action(self):
         self.Stack.setCurrentIndex(0)
@@ -567,7 +658,7 @@ class RfiClusterPage(QtWidgets.QWidget):
         if args["rfi_cluster_page"]["cluster_kwargs"] == "None":
             cluster_kwargs = {}
         else:
-            cluster_kwargs = dict(s.split("=") for s in args["rfi_detect_page"]["cluster_kwargs"].split("|"))
+            cluster_kwargs = dict(s.split("=") for s in args["rfi_cluster_page"]["cluster_kwargs"].split("|"))
 
         self.rfi_cluster.rfi_cluster(n_clusters=args["rfi_cluster_page"]["n_clusters"],
                                cluster_mode=cluster_mode,
@@ -665,6 +756,142 @@ class RfiClusterPage(QtWidgets.QWidget):
             self.pb_rfi_reduction.setDisabled(False)
             self.pb_rfi_cluster.setDisabled(False)
 
+    def _pb_select_export_action(self):
+
+        if self.pb_select_export.text() == "选中导出":
+            if self.page_state != 2:
+                QtWidgets.QMessageBox.information(self, "提示", "请先进行聚类分析!")
+                return
+            self.pb_select_export.setText("结束导出")
+            self.penlabel.reinit()
+            self.penlabel.setVisible(True)
+            self.rect_point_index = None
+
+            self.pb_rfi_cluster.setDisabled(True)
+            self.pb_rfi_cut.setDisabled(True)
+            self.pb_rfi_reduction.setDisabled(True)
+            self.pb_rfi_cluster.setDisabled(True)
+            self.pb_save_result.setDisabled(True)
+            self.pb_return.setDisabled(True)
+        else:
+            self.penlabel.setVisible(False)
+            if self.rect_point_index is not None:
+                button = QtWidgets.QMessageBox.warning(self, "提示",
+                                                       "是否保存选定数据？",
+                                                       QtWidgets.QMessageBox.Yes | QtWidgets.QMessageBox.No,
+                                                       QtWidgets.QMessageBox.No)
+                if button == QtWidgets.QMessageBox.Yes:
+
+                    absolute_path = QtWidgets.QFileDialog.getExistingDirectory(self, "请选择保存路径", ".")
+                    if absolute_path == "":
+                        return
+
+                    self.Stack.setCurrentIndex(3)
+                    QtWidgets.QApplication.processEvents()
+
+
+                    rect_rfi_features = self.rfi_cluster.rfi_features.iloc[self.rect_point_index].copy()
+                    rect_rfi_features.to_csv(absolute_path+"/rect_rfi_features.csv", index=False)
+
+                    # 创建存放数据的文件夹
+                    if not os.path.exists(absolute_path+"/image_data"):
+                        os.makedirs(absolute_path+"/image_data")
+
+                    rect_rfi_features = rect_rfi_features.values
+
+                    for i, feature in enumerate(rect_rfi_features):
+                        rfi_f = RfiFeatures(args["project_path"] + args["FAST_path"] + feature[0])
+                        rfi_f.feature_rfi_show(rfi_feature=feature,
+                                               edge_size=args["rfi_cluster_page"]["edge_size"],
+                                               label=self.rfi_cluster.y_est[self.rect_point_index[i]],
+                                               recount_mask=False,
+                                               save_fig=absolute_path+"/image_data/"+feature[0].split('-')[-1].split('.')[0]+"_image_%d"%i)
+                    self.Stack.setCurrentIndex(2)
+                    QtWidgets.QApplication.processEvents()
+
+                self.tableView.setVisible(False)
+                self.pb_select_export.setText("选中导出")
+                self.pb_rfi_cluster.setDisabled(False)
+                self.pb_rfi_cut.setDisabled(False)
+                self.pb_rfi_reduction.setDisabled(False)
+                self.pb_rfi_cluster.setDisabled(False)
+                self.pb_save_result.setDisabled(False)
+                self.pb_return.setDisabled(False)
+
+    def _penlabel_signel_action(self, x, y, w, h):
+        x = x + self.penlabel.x()
+        y = y + self.penlabel.y()
+        point_start = [2.2 * (x - 42) / 1064 - 1.1, -2.2 * (y - 163) / 816 + 1.1]
+        point_end = [2.2 * (x+w - 42) / 1064 - 1.1, -2.2 * (y+h - 163) / 816 + 1.1]
+        if point_start[0] < -1.1 or point_start[0] > 1.1 or point_start[1] < -1.1 or point_start[1] > 1.1:
+            return
+        if point_end[0] < -1.1 or point_end[0] > 1.1 or point_end[1] < -1.1 or point_end[1] > 1.1:
+            return
+
+        # 获取选择区域样本索引
+        self.rect_point_index = np.where(np.logical_and(
+            np.logical_and(self.rfi_cluster.X_reduce[:, 0] >= point_start[0],
+                           self.rfi_cluster.X_reduce[:, 1] >= point_end[1]),
+            np.logical_and(self.rfi_cluster.X_reduce[:, 0] <= point_end[0],
+                           self.rfi_cluster.X_reduce[:, 1] <= point_start[1])
+        ))[0]
+
+        button = QtWidgets.QMessageBox.warning(self, "提示",
+                                               "选定了%d个样本，是否导出数据？" % len(self.rect_point_index),
+                                               QtWidgets.QMessageBox.Yes | QtWidgets.QMessageBox.No,
+                                               QtWidgets.QMessageBox.No)
+        if button == QtWidgets.QMessageBox.Yes:
+            # 清空数据
+            self.model.clear()
+            self.model.setHorizontalHeaderLabels(['编号', '文件名', '聚类编号', '起始频率', '频带宽度', '持续时间', '强度均值', '强度方差'])
+            QtWidgets.QApplication.processEvents()
+
+            rect_rfi_features = self.rfi_cluster.rfi_features.iloc[self.rect_point_index].values
+            if len(rect_rfi_features) < TABLEVIEW_SIZE:
+                row_len = len(rect_rfi_features)
+            else:
+                row_len = TABLEVIEW_SIZE
+
+            for row in range(row_len):
+                self.model.setItem(row, 0, QtGui.QStandardItem(str(self.rect_point_index[row])))
+                self.model.setItem(row, 1, QtGui.QStandardItem(rect_rfi_features[row][0].split('-')[-1]))
+                for column in range(6):
+                    if column == 0:
+                        data = str(self.rfi_cluster.y_est[self.rect_point_index[row]])
+                    else:
+                        data = "%.4f" % rect_rfi_features[row][column - 6]
+                    item = QtGui.QStandardItem(data)
+                    # 设置每个位置的文本值
+                    self.model.setItem(row, column + 2, item)
+
+            self.tableView.setVisible(True)
+            QtWidgets.QApplication.processEvents()
+
+
+    def _tableView_action(self, clickedIndex):
+        """
+        点击表格数据
+        :param clickedIndex:
+        :return:
+        """
+        row = clickedIndex.row()
+        label = int(self.model.index(row, 2).data())
+        row = int(self.model.index(row, 0).data())
+
+        if row > self.rfi_cluster.rfi_features.shape[0]:
+            return
+
+        feature = self.rfi_cluster.rfi_features.iloc[row].values
+        rfi_f = RfiFeatures(args["project_path"] + args["FAST_path"] + feature[0])
+        img = rfi_f.feature_rfi_show(rfi_feature=feature,
+                                     edge_size=args["rfi_cluster_page"]["edge_size"],
+                                     label=label,
+                                     recount_mask=False)
+        pix = img.toqpixmap()
+        self.image_3.setPixmap(pix)
+        self.image_2.setVisible(False)
+        self.image_3.setVisible(True)
+        QtWidgets.QApplication.processEvents()
 
 
 

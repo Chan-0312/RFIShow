@@ -646,31 +646,29 @@ def get_rfi_features(fits_dir, npol_num=1, connectivity=1, mask_mode="arpls_mask
     cols_name = ["fits_name", "block_num", "npol_num", "noise_type", "x_index", "y_index", "bandwidth_unit", "duration_unit",
                  "x", "y", "bandwidth", "duration", "data_mean", "data_var"]
 
-    rfi_feature_df = pd.DataFrame(data=None, columns=cols_name)
-
     for fits_name in tqdm(fits_list):
         rfi_f = RfiFeatures(fits_dir + fits_name, mask_mode, **kwargs)
         rfi_features = np.array(rfi_f.get_rfi_features(npol_num=npol_num,
                                                        block_num_list=None,
                                                        connectivity=connectivity))
-        rfi_feature_df = rfi_feature_df.append(pd.DataFrame(data=rfi_features, columns=cols_name),
-                                               ignore_index=True)
 
-    # 修改数据类型
-    rfi_feature_df.block_num = rfi_feature_df.block_num.astype(np.int16)
-    rfi_feature_df.npol_num = rfi_feature_df.npol_num.astype(np.int16)
-    rfi_feature_df.noise_type = rfi_feature_df.noise_type.astype(np.int16)
-    rfi_feature_df.x_index = rfi_feature_df.x_index.astype(np.int16)
-    rfi_feature_df.y_index = rfi_feature_df.y_index.astype(np.int16)
-    rfi_feature_df.bandwidth_unit = rfi_feature_df.bandwidth_unit.astype(np.int16)
-    rfi_feature_df.duration_unit = rfi_feature_df.duration_unit.astype(np.int16)
-    rfi_feature_df.x = rfi_feature_df.x.astype(np.float32)
-    rfi_feature_df.y = rfi_feature_df.y.astype(np.float32)
-    rfi_feature_df.bandwidth = rfi_feature_df.bandwidth.astype(np.float32)
-    rfi_feature_df.duration = rfi_feature_df.duration.astype(np.float32)
-    rfi_feature_df.data_mean = rfi_feature_df.data_mean.astype(np.float32)
-    rfi_feature_df.data_var = rfi_feature_df.data_var.astype(np.float32)
+        rfi_feature_df = pd.DataFrame(data=rfi_features, columns=cols_name)
 
-    rfi_feature_df.to_csv(fits_dir + 'output_data/rfi_feature_data.csv', index=False)
+        # 修改数据类型
+        rfi_feature_df.block_num = rfi_feature_df.block_num.astype(np.int16)
+        rfi_feature_df.npol_num = rfi_feature_df.npol_num.astype(np.int16)
+        rfi_feature_df.noise_type = rfi_feature_df.noise_type.astype(np.int16)
+        rfi_feature_df.x_index = rfi_feature_df.x_index.astype(np.int16)
+        rfi_feature_df.y_index = rfi_feature_df.y_index.astype(np.int16)
+        rfi_feature_df.bandwidth_unit = rfi_feature_df.bandwidth_unit.astype(np.int16)
+        rfi_feature_df.duration_unit = rfi_feature_df.duration_unit.astype(np.int16)
+        rfi_feature_df.x = rfi_feature_df.x.astype(np.float32)
+        rfi_feature_df.y = rfi_feature_df.y.astype(np.float32)
+        rfi_feature_df.bandwidth = rfi_feature_df.bandwidth.astype(np.float32)
+        rfi_feature_df.duration = rfi_feature_df.duration.astype(np.float32)
+        rfi_feature_df.data_mean = rfi_feature_df.data_mean.astype(np.float32)
+        rfi_feature_df.data_var = rfi_feature_df.data_var.astype(np.float32)
 
-    return rfi_feature_df
+        rfi_feature_df.to_csv(fits_dir + 'output_data/'+os.path.splitext(fits_name)[0]+"_rfi_feature.csv", index=False)
+
+
